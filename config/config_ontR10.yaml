@@ -1,0 +1,110 @@
+# URLS TO DATA
+
+SAMPLE_IDS:
+  - PAW70337
+  # - PAW71238
+
+# graph_base: "/private/groups/patenlab/anovak/projects/hprc/lr-giraffe/graphs/hprc-v1.1-mc-chm13.d9"
+# graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v1.1-mc-chm13.d9.snarls"
+
+# ############# V2 frequency filtered graphs ################
+# graph_base: "/private/home/ghickey/dev/work/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval.d46"
+# graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v2.0-mc-chm13-eval.d46.snarls"
+
+############ V2 normal graph for haplotype-sampling ################
+graph_base: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval"
+# graph_snarl: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval.snarls" # use only when doing full v2 graph mapping
+
+
+minparams: "k31.w50.W"
+chm13_ref: "/private/groups/migalab/references/CHM13/chm13v2.0.fa"
+HG002v101_ref: "/private/groups/migalab/kkyriaki/references/unziped/hg002v1.0.1.fasta"
+
+MINIMAP:
+  kmerSize: 17
+  minibatchSize: "5G"
+  mdString: ""  # other option "--MD"
+  eqxString: "--eqx"  # if not, then ""
+  asmPreset: "asm10"
+
+HAPLOTYPE_SAMPLING:
+  k: 29
+  m: 128
+  v: 2
+  num_haps: 16
+  diploid_sampling: False
+
+ANALYSEPAF:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/analyzePaf"
+
+DISPLAYPAF:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/DisplayPafAlignments"
+
+SHASTA:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/shasta"
+  conf: "/private/groups/migalab/shnegi/vg_anchors_project/anchors.conf"
+
+TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp"
+
+# region:
+#   chromosome: "chr1"
+#   start: "154314275"
+#   end: "154416264"
+#   flank: 1000000
+# region_id: "chr1A"
+
+region:
+  chromosome: "chr6"
+  start: "31798842"
+  end: "31960826"
+  flank: 1000000
+region_id: "rccx"
+
+# region:
+#   chromosome: "chr6"
+#   start: "31698842"
+#   end: "32060826"
+#   flank: 1000000
+# region_id: "rccx_ext"
+
+# region:
+#   chromosome: "chr1"
+#   start: "15000000"
+#   end: "15400000"
+#   flank: 1000000
+# region_id: "chr1_test"
+
+# region:
+#   chromosome: "chr1"
+#   start: "1"
+#   end: "100000000"
+#   flank: 1000000
+# region_id: "chr1_100Mb"
+
+# region:
+#   chromosome: "chr2"
+#   start: "46714257"
+#   end: "46934351"
+#   flank: 1000000
+# region_id: "chr2A"
+
+# region:
+#   chromosome: "chr5"
+#   start: "70759797"
+#   end: "71441088"
+#   flank: 1000000
+# region_id: "smn"
+
+# region:
+#   chromosome: "chr7"
+#   start: "16838135"
+#   end: "18570934"
+#   flank: 1000000
+# region_id: "chr7B"
+
+# region:
+#   chromosome: "chr6"
+#   start: "23142134"
+#   end: "40592133"
+#   flank: 1000000
+# region_id: "chr6A"

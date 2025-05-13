@@ -1,0 +1,59 @@
+# URLS TO DATA
+
+SAMPLE_IDS:
+  # - DEN63190
+  - LGA80510
+  # - DEN63290
+
+SEQUENCES:
+  # DEN63190: "/private/nanopore/CZI_CYP/DEN63190_merged.fastq.gz"
+  LGA80510: "/private/nanopore/CZI_CYP/01_23_23_R1041_CZI_LGA80510_Guppy_6.4.6_prom_sup_pass.fastq.gz"
+  # DEN63290:
+  #   - "/private/nanopore/CZI_CYP/01_23_23_R1041_CZI_DEN63290_1_Guppy_6.4.6_prom_sup_pass.fastq.gz"
+  #   - "/private/nanopore/CZI_CYP/01_23_23_R1041_CZI_DEN63290_2_Guppy_6.4.6_prom_sup_pass.fastq.gz"
+
+# graph_base: "/private/groups/patenlab/anovak/projects/hprc/lr-giraffe/graphs/hprc-v1.1-mc-chm13.d9"
+# graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v1.1-mc-chm13.d9.snarls"
+
+
+# ############# V2 normal graph for haplotype-sampling ################
+graph_base: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval"
+
+
+minparams: "k31.w50.W"
+grch38_ref: "/private/groups/migalab/kkyriaki/references/unziped/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+chm13_ref: "/private/groups/migalab/references/CHM13/chm13v2.0.fa"
+HG002v101_ref: "/private/groups/migalab/kkyriaki/references/unziped/hg002v1.0.1.fasta"
+
+MINIMAP:
+  kmerSize: 17
+  minibatchSize: "5G"
+  mdString: ""  # other option "--MD"
+  eqxString: "--eqx"  # if not, then ""
+  asmPreset: "asm10"
+
+HAPLOTYPE_SAMPLING:
+  k: 29
+  m: 128
+  v: 2
+  num_haps: 16
+  diploid_sampling: False
+
+ANALYSEPAF:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/analyzePaf"
+
+DISPLAYPAF:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/DisplayPafAlignments"
+
+SHASTA:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/shasta"
+  conf: "/private/groups/migalab/shnegi/vg_anchors_project/anchors.conf"
+
+TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp_r10"
+
+region:
+  chromosome: "chr6"
+  start: "31798842"
+  end: "31960826"
+  flank: 1000000
+region_id: "rccx_ext"

@@ -1,0 +1,102 @@
+# URLS TO DATA
+
+SAMPLE_IDS:
+  # - m840
+  - ont_LC2024
+
+## V1.1 frequency-filtered graphs
+graph_base: "/private/groups/patenlab/anovak/projects/hprc/lr-giraffe/graphs/hprc-v1.1-mc-chm13.d9"
+minparams: "k31.w50.W"
+graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v1.1-mc-chm13.d9.snarls"
+chm13_ref: "/private/groups/migalab/references/CHM13/chm13v2.0.fa"
+HG002v101_ref: "/private/groups/migalab/kkyriaki/references/unziped/hg002v1.0.1.fasta"
+
+## V2 frequency filtered graphs
+# graph_base: "/private/groups/patenlab/anovak/projects/hprc/lr-giraffe/graphs/hprc-v2.0-mc-chm13-eval.d46"
+# minparams: "k31.w50.W"
+# graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v2.0-mc-chm13-eval.d46.snarls"
+# chm13_ref: "/private/groups/migalab/references/CHM13/chm13v2.0.fa"
+# HG002v101_ref: "/private/groups/migalab/kkyriaki/references/unziped/hg002v1.0.1.fasta"
+
+MINIMAP:
+  kmerSize: 17
+  minibatchSize: "5G"
+  mdString: ""  # other option "--MD"
+  eqxString: "--eqx"  # if not, then ""
+  asmPreset: "asm10"
+
+ANALYSEPAF:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/analyzePaf"
+
+DISPLAYPAF:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/DisplayPafAlignments"
+
+SEQUENCES:
+  # m840:
+  # - m84005-220827-014912-s1
+  # - m84011-220902-175841-s1
+  # - m84039-230418-213342-s3
+  ont_LC2024:
+  - PAW42
+
+SHASTA:
+  bin: "/private/groups/migalab/shnegi/vg_anchors_project/shasta"
+  conf: "/private/groups/migalab/shnegi/vg_anchors_project/anchors.conf"
+
+TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp"
+
+# region:
+#   chromosome: "chr1"
+#   start: "154314275"
+#   end: "154416264"
+#   flank: 1000000
+# region_id: "chr1A_new_changes"
+
+region:
+  chromosome: "chr6"
+  start: "31798842"
+  end: "31960826"
+  flank: 1000000
+region_id: "rccx"
+
+# region:
+#   chromosome: "chr6"
+#   start: "31798842"
+#   end: "31960826"
+#   flank: 1000000
+# region_id: "rccx2"
+
+# region:
+#   chromosome: "chr1"
+#   start: "15000000"
+#   end: "15400000"
+#   flank: 1000000
+# region_id: "chr1_test"
+
+# region:
+#   chromosome: "chr2"
+#   start: "46714257"
+#   end: "46934351"
+#   flank: 1000000
+# region_id: "chr2A"
+
+# region:
+#   chromosome: "chr5"
+#   start: "70759797"
+#   end: "71441088"
+#   flank: 1000000
+# region_id: "smn"
+
+# region:
+#   chromosome: "chr7"
+#   start: "16838135"
+#   end: "18570934"
+#   flank: 1000000
+# region_id: "chr7B"
+
+# region:
+#   chromosome: "chr6"
+#   start: "23142134"
+#   end: "40592133"
+#   flank: 1000000
+# region_id: "chr6A"
