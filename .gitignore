@@ -1,0 +1,6 @@
+resources/
+results/
+logs/
+.snakemake/
+workflow/.snakemake/
+workflow/results*
