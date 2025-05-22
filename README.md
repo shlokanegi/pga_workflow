@@ -17,6 +17,18 @@ snakemake --use-singularity --singularity-args "-B /private/groups/" --configfil
 To resume the workflow from where it left off (e.g., after interruption), use:
 ```sh
 snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --rerun-incomplete
+## Sometimes, it asks to unlock and then rerun
+snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --unlock
 ```
 This will rerun any jobs that were incomplete or failed during the previous run.
 
+## Analyzing Anchor Coverage
+
+The workflow generates anchor coverage statistics during the assembly process. These statistics are stored in a JSON file with the extension `.coverage.json` in the anchors output directory. To analyze and visualize these statistics:
+
+**Generate Coverage Statistics**:
+```sh
+python vg_assembly/analyze_anchor_coverage.py \
+    --coverage-file results_hs/hs-16/LGA80510/rccx_test/anchors/subgraph.anchors.json.jsonl.coverage.json \
+    --output-plot results_hs/hs-16/LGA80510/rccx_test/anchors/coverage_histogram.png
+```
