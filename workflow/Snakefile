@@ -441,7 +441,7 @@ rule run_hifiasm:
         hp1_gfa="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa",
         hp2_gfa="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa"
     input:
-    	ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
+    	chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta",
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_hifiasm.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/{region_id}/run_hifiasm.log"
     threads: 128
@@ -450,7 +450,7 @@ rule run_hifiasm:
         eval "$(micromamba shell hook --shell bash)"
         # Run hifiasm
         micromamba activate /private/home/kkyriaki/micromamba/envs/hifiasm_v0.25.0
-        hifiasm --ont -t {threads} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm/{wildcards.sample_id} --write-ec {input.ont_r10_sequence} > {log} 2>&1
+        hifiasm --ont -t {threads} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm/{wildcards.sample_id} --write-ec {input.chunked_fasta} > {log} 2>&1
         """
 
 rule convert_gfa_to_fasta:
