@@ -12,13 +12,13 @@
 ## Run the workflow
 From the pga_workflow/ directory, run:
 ```sh
-snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128
+snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --printshellcmds
 ```
 To resume the workflow from where it left off (e.g., after interruption), use:
 ```sh
-snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --rerun-incomplete
+snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --printshellcmds --rerun-incomplete 
 ## Sometimes, it asks to unlock and then rerun
-snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --unlock
+snakemake --use-singularity --singularity-args "-B /private/groups/" --configfile config/config_ontR10.yaml --cores 128 --printshellcmds --unlock
 ```
 This will rerun any jobs that were incomplete or failed during the previous run.
 

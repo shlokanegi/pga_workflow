@@ -40,7 +40,9 @@ rule all:
 		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
 		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
 		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
+		expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.subregion.fastq", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
         expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
+        expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
         expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
         expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
         # expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
@@ -436,12 +438,33 @@ rule run_displayPafAlignments:
 		Rscript {input.R_script} -c {output.csv} -o hs-{wildcards.k}_{wildcards.sample_id}_{wildcards.region_id} >> {log} 2>&1
 		"""
 
+
+# -------- hifiasm rules -------- #
+rule chunk_fastq:
+	output:
+		chunked_fastq="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.subregion.fastq"
+	input:
+		chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf",
+		fastq="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
+	benchmark:
+		"benchmarks/{sample_id}/hs-{k}/{region_id}/chunk_fastq.benchmark.txt"
+	log:
+		"logs/{sample_id}/hs-{k}/{region_id}/chunk_fastq.log"
+	container:
+		"docker://pegi3s/seqkit:latest"
+	threads: 64
+	shell:
+		"""
+		# Extract READ IDs from chunked GAF and then extract fastq records for these reads
+		cut -f1 {input.chunked_gaf} | sort -u -T {config[TMPDIR]} | seqkit grep -f - {input.fastq} --threads {threads} > {output.chunked_fastq}
+		"""
+
 rule run_hifiasm:
     output:
         hp1_gfa="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa",
         hp2_gfa="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa"
     input:
-    	chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta",
+    	chunked_fastq="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.subregion.fastq"
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_hifiasm.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/{region_id}/run_hifiasm.log"
     threads: 128
@@ -450,7 +473,7 @@ rule run_hifiasm:
         eval "$(micromamba shell hook --shell bash)"
         # Run hifiasm
         micromamba activate /private/home/kkyriaki/micromamba/envs/hifiasm_v0.25.0
-        hifiasm --ont -t {threads} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm/{wildcards.sample_id} --write-ec {input.chunked_fasta} > {log} 2>&1
+        hifiasm --ont -t {threads} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm/{wildcards.sample_id} --write-ec {input.chunked_fastq} > {log} 2>&1
         """
 
 rule convert_gfa_to_fasta:
