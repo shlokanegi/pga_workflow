@@ -530,7 +530,7 @@ rule convert_gfa_to_fasta:
 rule align_hifiasm_assembly_to_chunked_reference:
     output:
         hp1_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf",
-        hp2_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap2_to_kelp_minimap_{asm_preset}.paf"
+        hp2_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap2_to_hg002_minimap_{asm_preset}.paf"
     input:
         analyzePaf_bin=config["ANALYSEPAF"]["bin"],
         hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
