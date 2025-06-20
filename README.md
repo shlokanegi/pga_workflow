@@ -22,6 +22,16 @@ snakemake --use-singularity --singularity-args "-B /private/groups/" --configfil
 ```
 This will rerun any jobs that were incomplete or failed during the previous run.
 
+## Workflow Control with RUN_MODE
+Different execution modes are controlled by the `RUN_MODE` parameter in the `config/config_ontR10.yaml` file.
+
+### RUN_MODE Options:
+1. **`"no_positive_control"`**: Runs only the sample workflow
+2. **`"positive_control_only"`**: Runs only the positive control workflow. Uses the HG002-included graph for analysis
+3. **`"all"`** (default): Runs both the sample workflow and the positive control workflow
+
+Edit the `RUN_MODE` parameter in your config file (e.g., `config/config_ontR10.yaml`) and run the workflow as usual.
+
 ## Analyzing Anchor Coverage
 
 The workflow generates anchor coverage statistics during the assembly process. These statistics are stored in a JSON file with the extension `.coverage.json` in the anchors output directory. To analyze and visualize these statistics:
