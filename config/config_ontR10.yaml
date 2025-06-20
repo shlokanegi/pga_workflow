@@ -13,6 +13,9 @@ SAMPLE_IDS:
 
 ############ V2 normal graph for haplotype-sampling ################
 graph_base: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval"
+
+############ V2 normal graph with HG002 assembly included, to be used as a positive control ################
+graph_base_hg2: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13/hprc-v2.0-mc-chm13"
 # graph_snarl: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval.snarls" # use only when doing full v2 graph mapping
 
 
@@ -46,6 +49,12 @@ SHASTA:
 
 TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp"
 
+# Control which part of the workflow to run.
+#   "all": Runs the sample workflow AND the positive control workflow.
+#   "no_positive_control": Runs only the sample workflow.
+#   "positive_control_only": Runs only the positive control workflow.
+RUN_MODE: "all"
+
 # region:
 #   chromosome: "chr1"
 #   start: "154314275"
@@ -66,45 +75,3 @@ region_id: "rccx"
 #   end: "32060826"
 #   flank: 1000000
 # region_id: "rccx_ext"
-
-# region:
-#   chromosome: "chr1"
-#   start: "15000000"
-#   end: "15400000"
-#   flank: 1000000
-# region_id: "chr1_test"
-
-# region:
-#   chromosome: "chr1"
-#   start: "1"
-#   end: "100000000"
-#   flank: 1000000
-# region_id: "chr1_100Mb"
-
-# region:
-#   chromosome: "chr2"
-#   start: "46714257"
-#   end: "46934351"
-#   flank: 1000000
-# region_id: "chr2A"
-
-# region:
-#   chromosome: "chr5"
-#   start: "70759797"
-#   end: "71441088"
-#   flank: 1000000
-# region_id: "smn"
-
-# region:
-#   chromosome: "chr7"
-#   start: "16838135"
-#   end: "18570934"
-#   flank: 1000000
-# region_id: "chr7B"
-
-# region:
-#   chromosome: "chr6"
-#   start: "23142134"
-#   end: "40592133"
-#   flank: 1000000
-# region_id: "chr6A"

@@ -1,4 +1,4 @@
-### snakemake file for aligning GIAB HG002 samples (ONT Q25 reads) with the haplotype-sampled graphs
+### snakemake file for aligning GIAB HG002 samples (ONT Q25 reads) with the haplotype-sampled graphs and positive control using hg2-included graph
 
 #INCLUDING RULE FILES
 SAMPLE_IDS = config['SAMPLE_IDS']
@@ -6,50 +6,80 @@ REGION_ID = config['region_id']
 ASM_PRESET= config['MINIMAP']['asmPreset']
 tmpdir = config['TMPDIR']
 K=config['HAPLOTYPE_SAMPLING']['num_haps']
+run_mode = config.get("RUN_MODE", "all")
 
+wildcard_constraints:
+    region_id=REGION_ID,
+    sample_id=r"PAW.*"
 
-### ALL RULES
+def get_final_targets(wildcards):
+    outputs = []
+    outputs.extend(expand("results/reads/{sample_id}.fasta", sample_id=SAMPLE_IDS))
+    outputs.extend(expand("results/reads/{sample_id}.kff", sample_id=SAMPLE_IDS))
+    outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+
+    if run_mode in ["positive_control_only","all"]:
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.snarls", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.hg2.gaf", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.hg2.gaf.gz", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.vg", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/extended_anchor_reads_info.tsv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/extended_anchor_stats", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+
+    if run_mode in ["no_positive_control","all"]:
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.dist", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.withzip.min", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.zipcodes", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.sorted.gaf.gz", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.pg.vg", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.snarls", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.vg", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.gfa", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.dist", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.fasta", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+
+    return outputs
+
+if run_mode == "positive_control_only":
+    print(f"INFO: RUN_MODE is '{run_mode}'. Collecting only positive control targets.")
+elif run_mode == "no_positive_control":
+    print(f"INFO: RUN_MODE is '{run_mode}'. Collecting only sample workflow targets.")
+else: # This handles "all" or any other unspecified value
+    print(f"INFO: RUN_MODE is '{run_mode}'. Collecting all targets.")
+
 rule all:
-	input:
-		# expand("results/reads/{sample_id}.fasta", sample_id=SAMPLE_IDS),
-		expand("results/reads/{sample_id}.kff", sample_id=SAMPLE_IDS),
-		expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.dist", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.withzip.min", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.zipcodes", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.sorted.gaf.gz", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.sorted.gaf.gz.tbi", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.pg.vg", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.snarls", sample_id=SAMPLE_IDS, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.vg", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.vg", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.gfa", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.dist", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.jsonl", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		# expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
-		expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
-		# expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm/{sample_id}.subregion.fastq", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-        expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-        expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-        expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-        expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K),
-        # expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET),
-        expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, region_id=REGION_ID, k=K, asm_preset=ASM_PRESET)
-		# expand("results_hs/alignment_chm13/{sample_id}/{sample_id}_to_CHM13_minimap.bam", sample_id=SAMPLE_IDS),
-		# expand("results_hs/alignment_chm13/{sample_id}/{sample_id}_to_CHM13_dv.vcf.gz", sample_id=SAMPLE_IDS)
-
+    input:
+        get_final_targets
 
 # rule convert_fq_to_fasta:
 #     output:
@@ -68,7 +98,7 @@ rule all:
 
 rule count_kmers:
     output:
-        kff = "results/reads/{sample_id}.kff"
+        kff="results/reads/{sample_id}.kff"
     input:
         fasta="results/reads/{sample_id}.fasta"
     benchmark:
@@ -83,6 +113,185 @@ rule count_kmers:
         kmc -k29 -m128 -okff -t{threads} -fa {input.fasta} results/reads/{wildcards.sample_id} results/reads/tmp_{wildcards.sample_id}
         """
 
+# --------- Preparing positive control --------- #
+
+rule prepare_positive_control:
+    output:
+        sampled_hg2_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz",
+        sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
+        snarls_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.snarls",
+        alignment_gaf="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.hg2.gaf",
+        alignment_gaf_sorted="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.hg2.gaf.gz"
+    input:
+        kff="results/reads/{sample_id}.kff",
+        graph_gbz_hg2=config["graph_base_hg2"] + ".gbz",
+        graph_hapl_hg2=config["graph_base_hg2"] + ".hapl",
+        awk_script="workflow/scripts/process_out.awk",
+        ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
+    params:
+        k=config["HAPLOTYPE_SAMPLING"]["num_haps"],
+        diploid_sampling="--diploid_sampling" if config["HAPLOTYPE_SAMPLING"]["diploid_sampling"] else ""
+    benchmark: "benchmarks/{sample_id}/hs-{k}/prepare_positive_control.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/prepare_positive_control.log"
+    threads: 128
+    shell:
+        """
+        echo "------Haplotype sampling of HG2 graph------"
+        vg haplotypes -v 2 -t {threads} --include-reference {params.diploid_sampling} --num-haplotypes {params.k} \
+            -i {input.graph_hapl_hg2} -k {input.kff} -g {output.sampled_hg2_gbz} {input.graph_gbz_hg2}
+
+        echo "------Convert the sampled HG2 graph to a PGVG graph------"
+        vg convert -t {threads} {output.sampled_hg2_gbz} -p > {output.sampled_pg_vg_hg2}
+
+        echo "------Compute snarls for the sampled HG2 graph------"
+        vg snarls -t {threads} -T {output.sampled_hg2_gbz} > {output.snarls_hg2}
+
+        echo "------Align reads to the sampled HG2 graph------"
+        vg giraffe -t {threads} -b r10 -f {input.ont_r10_sequence} -Z {output.sampled_hg2_gbz} --output-format gaf 2>> {log} | {input.awk_script} > {output.alignment_gaf}
+
+        echo "------Sort and index the alignment file------"
+        vg gamsort -t {threads} -p -G {output.alignment_gaf} | bgzip -c > {output.alignment_gaf_sorted}
+        tabix -@ {threads} -p gaf {output.alignment_gaf_sorted}
+        """
+
+rule vg_chunk_and_index_positive_control:
+	output:
+		subgraph_vg_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.vg",
+		chunked_gaf_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
+		subgraph_pg_vg_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.vg",
+		subgraph_pg_gfa_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.gfa",
+		subgraph_pg_dist_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist"
+	input:
+		sorted_gaf_hg2="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.hg2.gaf.gz",
+		sampled_gbz_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz",
+		snarls_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.snarls"
+	params:
+		region="CHM13#0#" + config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end'],
+		region_underscore="_0_CHM13#0#" + config['region']['chromosome'] + "_" + config['region']['start'] + "_" + config['region']['end'],
+		prefix="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph",
+		region_id=config["region_id"]
+	benchmark:
+		"benchmarks/{sample_id}/hs-{k}/{region_id}/vg_chunk_and_index_positive_control.benchmark.txt"
+	log:
+		"logs/{sample_id}/hs-{k}/{region_id}/vg_chunk_and_index_positive_control.log"
+	threads: 128
+	shell:
+		"""
+		vg chunk -a {input.sorted_gaf_hg2} -F -g -x {input.sampled_gbz_hg2} -p {params.region} -S {input.snarls_hg2} --trace -t {threads} -b {params.prefix} > {output.subgraph_vg_hg2} 2> {log}
+		mv {params.prefix}{params.region_underscore}.gaf {output.chunked_gaf_hg2}
+		vg convert -p {output.subgraph_vg_hg2} > {output.subgraph_pg_vg_hg2}
+		vg convert -f {output.subgraph_pg_vg_hg2} > {output.subgraph_pg_gfa_hg2}
+		vg index -t {threads} {output.subgraph_pg_vg_hg2} --dist-name {output.subgraph_pg_dist_hg2}
+		"""
+
+rule run_anchor_generatation_for_positive_control:
+    output:
+        anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl",
+        anchors_preext="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.jsonl",
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl"
+    input:
+        sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
+        subgraph_pg_dist_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist",
+        chunked_gaf_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf"
+    benchmark:
+        "benchmarks/{sample_id}/hs-{k}/{region_id}/run_anchor_generatation_for_positive_control.benchmark.txt"
+    shell:
+        """
+        vg_anchor build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist_hg2} \
+            --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph
+
+        vg_anchor get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf_hg2} \
+            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json
+        """
+
+rule chunk_fasta_for_positive_control:
+    output:
+        chunked_fasta = "results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta"
+    input:
+        chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
+        fasta="results/reads/{sample_id}.fasta"
+    container:
+        "docker://pegi3s/seqkit:latest"
+    shell:
+        """
+        # Extract READ IDs from chunked GAF and then extract fasta records for these reads
+        cut -f1 {input.chunked_gaf} | sort -u -T {config[TMPDIR]}| seqkit grep -f - {input.fasta} > {output.chunked_fasta}
+        """
+
+rule run_shasta_assembly_for_positive_control:
+    output: "results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta"
+    input:
+        shasta=config["SHASTA"]["bin"],
+        chunked_fasta = "results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta",
+        shasta_conf = config["SHASTA"]["conf"],
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl"
+    benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_shasta_assembly_for_positive_control.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/{region_id}/run_shasta_assembly_for_positive_control.log"
+    shell:
+        """
+        ## make a copy of the anchors.json for Shasta
+        cp {input.anchors} results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/shasta/anchors.json
+        rm -rf results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/shasta/ShastaRun
+
+        {input.shasta} --input {input.chunked_fasta} --assemblyDirectory results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/shasta/ShastaRun \
+        	--config {input.shasta_conf} --anchors results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/shasta/anchors.json --memoryMode filesystem --memoryBacking disk > {log} 2>&1
+        """
+
+rule get_extended_anchor_stats_for_positive_control:
+    output:
+        anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/extended_anchor_reads_info.tsv",
+        anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/extended_anchor_stats")
+    input:
+        python_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/preprocess_vganchor_outfiles_extention.py",
+        R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/get_extended_anchor_stats.R",
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
+        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta"
+    params:
+        seqtech="ont_r10",
+        region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end']
+    log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats_for_positive_control.log"
+    shell:
+        """
+        # Since this JSON is confusing to interpret, convert it to a TSV...
+        python3 {input.python_script} -j {input.anchors}
+        # Next, generate anchor stats plots...
+        Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc -o {params.seqtech}_{wildcards.region_id} -r {params.region} > {log} 2>&1
+        """
+
+rule align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control:
+    output:
+        paf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf",
+        csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv",
+        plots_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{asm_preset}_plots")
+    input:
+        analyzePaf_bin=config["ANALYSEPAF"]["bin"],
+        displayPaf_bin=config["DISPLAYPAF"]["bin"],
+        hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
+        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta",
+        R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R"
+    params:
+        asm_preset=config["MINIMAP"]["asmPreset"]
+    benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control_{asm_preset}.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/{region_id}/align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control_{asm_preset}.log"
+    container: "docker://mkolmogo/card_minimap2:2.23"
+    threads: 64
+    shell:
+        """
+        minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked} {input.subregion_shasta_assembly} > {output.paf}
+        {input.analyzePaf_bin} \
+            --input {output.paf} \
+            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_shasta_to_hg002_minimap_{wildcards.asm_preset} \
+            --pixelsPerMb 600 --minAlignmentQuality 0 --minAlignmentLength 0 > {log} 2>&1
+
+        {input.displayPaf_bin} \
+            --paf {output.paf} -r {input.hg002_reference_chunked} -a {input.subregion_shasta_assembly} \
+            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_shasta_to_hg002_minimap_{wildcards.asm_preset}_displayPaf \
+            --minAlignmentQuality 1 --minAlignmentLength 0 > {log} 2>&1
+
+        Rscript {input.R_script} -c {output.csv} -o hs-{wildcards.k}_{wildcards.sample_id}_{wildcards.region_id} >> {log} 2>&1
+        """
+
+# --------- Main workflow --------- #
 
 rule haplotype_sample_graph:
     output:
@@ -143,17 +352,17 @@ rule align_reads_with_vg_giraffe:
         """
 
 rule parse_gaf:
-	output:
-		file="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf"
-	input:
-		script="workflow/scripts/parse_gaf.py",
-		gaf="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
-	log:
-		"logs/{sample_id}/hs-{k}/parse_gaf.log"
-	shell:
-		"""
-		python3 {input.script} {input.gaf} > {output.file} 2> {log}
-		"""
+    output:
+        file="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf"
+    input:
+        script="workflow/scripts/parse_gaf.py",
+        gaf="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
+    log:
+        "logs/{sample_id}/hs-{k}/parse_gaf.log"
+    shell:
+        """
+        python3 {input.script} {input.gaf} > {output.file} 2> {log}
+        """
 
 
 rule sort_index_gaf:
@@ -269,22 +478,20 @@ rule get_anchors_from_gaf:
 		"""
 
 rule chunk_fasta:
-	output:
-		chunked_fasta = "results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta"
-	input:
-		chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf",
-		fasta="results/reads/{sample_id}.fasta"
-	benchmark:
-		"benchmarks/{sample_id}/hs-{k}/{region_id}/chunk_fasta.benchmark.txt"
-	log:
-		"logs/{sample_id}/hs-{k}/{region_id}/chunk_fasta.log"
-	container:
-		"docker://pegi3s/seqkit:latest"
-	shell:
-		"""
-		# Extract READ IDs from chunked GAF and then extract fasta records for these reads
-		cut -f1 {input.chunked_gaf} | sort -u -T {config[TMPDIR]}| seqkit grep -f - {input.fasta} > {output.chunked_fasta}
-		"""
+    output:
+        chunked_fasta = "results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta"
+    input:
+        chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf",
+        fasta="results/reads/{sample_id}.fasta"
+    benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/chunk_fasta.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/{region_id}/chunk_fasta.log"
+    container:
+        "docker://pegi3s/seqkit:latest"
+    shell:
+        """
+        # Extract READ IDs from chunked GAF and then extract fasta records for these reads
+        cut -f1 {input.chunked_gaf} | sort -u -T {config[TMPDIR]}| seqkit grep -f - {input.fasta} > {output.chunked_fasta}
+        """
 
 
 # rule align_reads_to_linear_reference:
@@ -352,27 +559,26 @@ rule run_shasta_assembly:
 # 			--pixelsPerMb 5 --minAlignmentQuality 0 --minAlignmentLength 0 > {log} 2>&1
 # 		"""
 
-
 rule get_extended_anchor_stats:
-	output:
-		anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv",
-		anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats")
-	input:
-		python_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/preprocess_vganchor_outfiles_extention.py",
-		R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/get_extended_anchor_stats.R",
-		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
-		subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta"
-	params:
-		seqtech="ont_r10",
-		region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end']
-	log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats.log"
-	shell:
-		"""
-		# Since this JSON is confusing to interpret, convert it to a TSV...
-		python3 {input.python_script} -j {input.anchors}
-		# Next, generate anchor stats plots...
-		Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id} -o {params.seqtech}_{wildcards.region_id} -r {params.region} > {log} 2>&1
-		"""
+    output:
+        anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv",
+        anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats")
+    input:
+        python_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/preprocess_vganchor_outfiles_extention.py",
+        R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/get_extended_anchor_stats.R",
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
+        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta"
+    params:
+        seqtech="ont_r10",
+        region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end']
+    log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats.log"
+    shell:
+        """
+        # Since this JSON is confusing to interpret, convert it to a TSV...
+        python3 {input.python_script} -j {input.anchors}
+        # Next, generate anchor stats plots...
+        Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id} -o {params.seqtech}_{wildcards.region_id} -r {params.region} > {log} 2>&1
+        """
 
 rule chunk_hg002_reference:
 	output:
@@ -495,6 +701,35 @@ rule convert_gfa_to_fasta:
         gfatools gfa2fa {input.hp2_gfa} > {output.hp2_fasta}
         """
 
+rule align_hifiasm_assembly_to_chunked_reference:
+    output:
+        hp1_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf",
+        hp2_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap2_to_hg002_minimap_{asm_preset}.paf"
+    input:
+        analyzePaf_bin=config["ANALYSEPAF"]["bin"],
+        hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
+        hifiasm_assembly_hp1="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta",
+        hifiasm_assembly_hp2="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.fasta"
+    params:
+        asm_preset=config["MINIMAP"]["asmPreset"]
+    benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_hifiasm_assembly_to_chunked_reference_{asm_preset}.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/{region_id}/align_hifiasm_assembly_to_chunked_reference_{asm_preset}.log"
+    container: "docker://mkolmogo/card_minimap2:2.23"
+    threads: 64
+    shell:
+        """
+        minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked} {input.hifiasm_assembly_hp1} > {output.hp1_paf}
+        {input.analyzePaf_bin} \
+            --input {output.hp1_paf} \
+            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{wildcards.asm_preset} \
+            --pixelsPerMb 600 --minAlignmentQuality 0 > {log} 2>&1
+
+        minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked} {input.hifiasm_assembly_hp2} > {output.hp2_paf}
+        {input.analyzePaf_bin} \
+            --input {output.hp2_paf} \
+            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_hifiasm_hap2_to_hg002_minimap_{wildcards.asm_preset} \
+            --pixelsPerMb 600 --minAlignmentQuality 0 >> {log} 2>&1
+        """
 
 # rule align_hifiasm_assembly_to_reference:
 #     output:
@@ -527,32 +762,3 @@ rule convert_gfa_to_fasta:
 #         """
 
 
-rule align_hifiasm_assembly_to_chunked_reference:
-    output:
-        hp1_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf",
-        hp2_paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap2_to_hg002_minimap_{asm_preset}.paf"
-    input:
-        analyzePaf_bin=config["ANALYSEPAF"]["bin"],
-        hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
-        hifiasm_assembly_hp1="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta",
-        hifiasm_assembly_hp2="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.fasta"
-    params:
-        asm_preset=config["MINIMAP"]["asmPreset"]
-    benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_hifiasm_assembly_to_chunked_reference_{asm_preset}.benchmark.txt"
-    log: "logs/{sample_id}/hs-{k}/{region_id}/align_hifiasm_assembly_to_chunked_reference_{asm_preset}.log"
-    container: "docker://mkolmogo/card_minimap2:2.23"
-    threads: 64
-    shell:
-        """
-        minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked} {input.hifiasm_assembly_hp1} > {output.hp1_paf}
-        {input.analyzePaf_bin} \
-            --input {output.hp1_paf} \
-            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{wildcards.asm_preset} \
-            --pixelsPerMb 600 --minAlignmentQuality 0 > {log} 2>&1
-
-        minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked} {input.hifiasm_assembly_hp2} > {output.hp2_paf}
-        {input.analyzePaf_bin} \
-            --input {output.hp2_paf} \
-            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_hifiasm_hap2_to_hg002_minimap_{wildcards.asm_preset} \
-            --pixelsPerMb 600 --minAlignmentQuality 0 >> {log} 2>&1
-        """
