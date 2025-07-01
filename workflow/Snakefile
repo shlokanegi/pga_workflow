@@ -1,6 +1,9 @@
 ### snakemake file for aligning GIAB HG002 samples (ONT Q25 reads) with the haplotype-sampled graphs and positive control using hg2-included graph
 
-#INCLUDING RULE FILES
+import configparser
+from datetime import datetime
+
+# --- CONFIGURATION SETUP ---
 SAMPLE_IDS = config['SAMPLE_IDS']
 REGION_ID = config['region_id']
 ASM_PRESET= config['MINIMAP']['asmPreset']
@@ -14,7 +17,7 @@ wildcard_constraints:
 
 def get_final_targets(wildcards):
     outputs = []
-    outputs.extend(expand("results/reads/{sample_id}.fasta", sample_id=SAMPLE_IDS))
+    # outputs.extend(expand("results/reads/{sample_id}.fasta", sample_id=SAMPLE_IDS))
     outputs.extend(expand("results/reads/{sample_id}.kff", sample_id=SAMPLE_IDS))
     outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
 
@@ -30,13 +33,14 @@ def get_final_targets(wildcards):
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/extended_anchor_reads_info.tsv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/extended_anchor_stats", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/pga_run.log", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
 
     if run_mode in ["no_positive_control","all"]:
         outputs.extend(expand("results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz", sample_id=SAMPLE_IDS, k=K))
@@ -55,6 +59,7 @@ def get_final_targets(wildcards):
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
@@ -62,11 +67,12 @@ def get_final_targets(wildcards):
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, k=K))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.fasta", sample_id=SAMPLE_IDS, k=K))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta", sample_id=SAMPLE_IDS, k=K))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.fasta", sample_id=SAMPLE_IDS, k=K))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_hifiasm_hap1_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pga_run.log", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
 
     return outputs
 
@@ -188,7 +194,8 @@ rule run_anchor_generatation_for_positive_control:
     output:
         anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl",
         anchors_preext="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.jsonl",
-        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl"
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
+        params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log"
     input:
         sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
         subgraph_pg_dist_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist",
@@ -261,14 +268,12 @@ rule get_extended_anchor_stats_for_positive_control:
 rule align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control:
     output:
         paf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf",
-        csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv",
-        plots_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{asm_preset}_plots")
+        csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv"    
     input:
         analyzePaf_bin=config["ANALYSEPAF"]["bin"],
         displayPaf_bin=config["DISPLAYPAF"]["bin"],
         hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
-        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta",
-        R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R"
+        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta"
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control_{asm_preset}.benchmark.txt"
@@ -287,8 +292,6 @@ rule align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positi
             --paf {output.paf} -r {input.hg002_reference_chunked} -a {input.subregion_shasta_assembly} \
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_shasta_to_hg002_minimap_{wildcards.asm_preset}_displayPaf \
             --minAlignmentQuality 1 --minAlignmentLength 0 > {log} 2>&1
-
-        Rscript {input.R_script} -c {output.csv} -o hs-{wildcards.k}_{wildcards.sample_id}_{wildcards.region_id} >> {log} 2>&1
         """
 
 # --------- Main workflow --------- #
@@ -440,7 +443,7 @@ rule vg_index_dist:
 	threads: 32
 	shell:
 		"""
-		 vg index {input.subgraph_pg_vg} --threads {threads} --dist-name {output.subgraph_pg_dist}
+		vg index {input.subgraph_pg_vg} --threads {threads} --dist-name {output.subgraph_pg_dist}
 		"""
 
 rule generate_anchors_dictionary:
@@ -462,7 +465,8 @@ rule generate_anchors_dictionary:
 rule get_anchors_from_gaf:
 	output:
 		anchors_preext="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.jsonl",
-		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl"
+		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
+		params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log"
 	input:
 		anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl",
 		chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf",
@@ -617,7 +621,7 @@ rule align_assembly_to_chunked_reference:
 		{input.analyzePaf_bin} \
 			--input {output.paf} \
 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_shasta_to_hg002_minimap_{wildcards.asm_preset} \
-			--pixelsPerMb 600 --minAlignmentQuality 1 --minAlignmentLength 0 > {log} 2>&1
+			--pixelsPerMb 600 --minAlignmentQuality 0 --minAlignmentLength 0 > {log} 2>&1
 		"""
 
 rule run_displayPafAlignments:
@@ -761,4 +765,34 @@ rule align_hifiasm_assembly_to_chunked_reference:
 #             --pixelsPerMb 600 --minAlignmentQuality 0 >> {log} 2>&1
 #         """
 
+rule generate_run_summary:
+    output:
+        pga_log="results_hs/hs-{k}/{sample_id}/{region_id}/pga_run.log"
+    input:
+        params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log",
+        shasta_conf=config["SHASTA"]["conf"],
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+    params:
+        run_mode=config['RUN_MODE'],
+        region_id=config['region_id'],
+        asm_preset=config['MINIMAP']['asmPreset']
+    shell:
+        """
+        python3 {input.script} --params-log {input.params_log} --shasta-conf {input.shasta_conf} --output-log {output.pga_log} --run-mode {params.run_mode} --region-id {params.region_id} --asm-preset {params.asm_preset}
+        """
 
+rule generate_run_summary_positive_control:
+    output:
+        pga_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/pga_run.log"
+    input:
+        params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log",
+        shasta_conf=config["SHASTA"]["conf"],
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+    params:
+        run_mode=config['RUN_MODE'],
+        region_id=config['region_id'],
+        asm_preset=config['MINIMAP']['asmPreset']
+    shell:
+        """
+        python3 {input.script} --params-log {input.params_log} --shasta-conf {input.shasta_conf} --output-log {output.pga_log} --run-mode {params.run_mode} --region-id {params.region_id} --asm-preset {params.asm_preset}
+        """

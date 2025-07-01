@@ -55,23 +55,9 @@ TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assem
 #   "positive_control_only": Runs only the positive control workflow.
 RUN_MODE: "all"
 
-# region:
-#   chromosome: "chr1"
-#   start: "154314275"
-#   end: "154416264"
-#   flank: 1000000
-# region_id: "chr1A"
-
 region:
-  chromosome: "chr6"
-  start: "31798842"
-  end: "31960826"
-  flank: 1000000
-region_id: "rccx"
-
-# region:
-#   chromosome: "chr6"
-#   start: "31698842"
-#   end: "32060826"
-#   flank: 1000000
-# region_id: "rccx_ext"
+  chromosome: "chr15"
+  start: "41306922"
+  end: "41625624"
+  flank: 5000000
+region_id: "strc"
