@@ -134,7 +134,7 @@ rule prepare_positive_control:
         kff="results/reads/{sample_id}.kff",
         graph_gbz_hg2=config["graph_base_hg2"] + ".gbz",
         graph_hapl_hg2=config["graph_base_hg2"] + ".hapl",
-        awk_script="workflow/scripts/process_out.awk",
+        awk_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
         ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
     params:
         k=config["HAPLOTYPE_SAMPLING"]["num_haps"],
@@ -254,22 +254,29 @@ rule get_extended_anchor_stats_for_positive_control:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/extended_anchor_stats")
     input:
-        python_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/preprocess_vganchor_outfiles_extention.py",
+        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
         R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/get_extended_anchor_stats.R",
-        # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
-        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl",
-        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta"
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
+        # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl",
+        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta",
+        chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta",
     params:
-        seqtech="ont_r10",
         region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end']
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats_for_positive_control.log"
     shell:
         """
+        mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/extended_anchor_stats
+
         # Since this JSON is confusing to interpret, convert it to a TSV...
-        python3 {input.python_script} -j {input.anchors}
+        python3 {input.scripts_dir}/preprocess_vganchor_outfiles_extention.py -j {input.anchors}
         # Next, generate anchor stats plots...
-        Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc -o {params.seqtech}_{wildcards.region_id} -r {params.region} > {log} 2>&1
+        Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc -o ont_r10_{wildcards.region_id} -r {params.region} > {log} 2>&1
+        
+        #------- Generate anchor sequence TSV --------#
+        master_table_tsv=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/extended_anchor_stats/ont_r10_{wildcards.region_id}_anchors_master_table.tsv
+        python {input.scripts_dir}/process_anchor_seqs.py -j {input.anchors} -m $master_table_tsv -f {input.chunked_fasta} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/extended_anchor_stats/ont_r10_{wildcards.region_id}
         """
+
 
 rule align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control:
     output:
@@ -344,7 +351,7 @@ rule align_reads_with_vg_giraffe:
     output:
         alignment="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
     input:
-        script="workflow/scripts/process_out.awk",
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
         sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz",
         distance_index="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.dist",
         minimizer_index="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.withzip.min",
@@ -364,7 +371,7 @@ rule parse_gaf:
     output:
         file="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf"
     input:
-        script="workflow/scripts/parse_gaf.py",
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/parse_gaf.py",
         gaf="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
     log:
         "logs/{sample_id}/hs-{k}/parse_gaf.log"
@@ -536,8 +543,8 @@ rule run_shasta_assembly:
 		shasta=config["SHASTA"]["bin"],
 		chunked_fasta = "results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta",
 		shasta_conf = config["SHASTA"]["conf"],
-		# anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl"
-		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl"
+		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl"
+		# anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl"
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_shasta_assembly.benchmark.txt"
 	log: "logs/{sample_id}/hs-{k}/{region_id}/run_shasta_assembly.log"
 	shell:
@@ -577,21 +584,26 @@ rule get_extended_anchor_stats:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats")
     input:
-        python_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/preprocess_vganchor_outfiles_extention.py",
+        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
         R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/get_extended_anchor_stats.R",
-        # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
-        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl",
-        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta"
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
+        # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl",
+        subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta",
+        chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta"
     params:
-        seqtech="ont_r10",
         region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end']
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats.log"
     shell:
         """
+        mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/extended_anchor_stats
         # Since this JSON is confusing to interpret, convert it to a TSV...
-        python3 {input.python_script} -j {input.anchors}
+        python3 {input.scripts_dir}/preprocess_vganchor_outfiles_extention.py -j {input.anchors}
         # Next, generate anchor stats plots...
-        Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id} -o {params.seqtech}_{wildcards.region_id} -r {params.region} > {log} 2>&1
+        Rscript {input.R_script} -d results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id} -o ont_r10_{wildcards.region_id} -r {params.region} > {log} 2>&1
+
+        #------- Generate anchor sequence TSV --------#
+        master_table_tsv=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/extended_anchor_stats/ont_r10_{wildcards.region_id}_anchors_master_table.tsv
+        python {input.scripts_dir}/process_anchor_seqs.py -j {input.anchors} -m $master_table_tsv -f {input.chunked_fasta} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/extended_anchor_stats/ont_r10_{wildcards.region_id}
         """
 
 rule chunk_hg002_reference:
