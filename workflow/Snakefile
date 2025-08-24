@@ -30,6 +30,10 @@ def get_final_targets(wildcards):
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.vg", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        # --- annotate with refpos ---#
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gam", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.refpos.gam", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.refpos.gaf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
@@ -56,6 +60,10 @@ def get_final_targets(wildcards):
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.vg", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.gfa", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        #--- annotate with refpos ---#
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gam", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gam", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gaf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.dist", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
@@ -204,6 +212,24 @@ rule vg_chunk_and_index_positive_control:
 		vg index -t {threads} {output.subgraph_pg_vg_hg2} --dist-name {output.subgraph_pg_dist_hg2}
 		"""
 
+rule annotate_gam_gaf_with_refpos_for_positive_control:
+    output:
+        chunked_gam="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gam",
+        annotated_gam="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.refpos.gam",
+        annotated_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.refpos.gaf"
+    input:
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py",
+        chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
+        sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz"
+    threads: 16
+    shell:
+        """
+        vg convert --gaf-to-gam {input.chunked_gaf} {input.sampled_gbz} > {output.chunked_gam}
+        vg annotate -x {input.sampled_gbz} -a {output.chunked_gam} -p -P -t {threads} > {output.annotated_gam}
+        vg view -a {output.annotated_gam} -j | python {input.script} --gaf {input.chunked_gaf} --output {output.annotated_gaf}
+        """
+
+
 rule run_anchor_generatation_for_positive_control:
     output:
         anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl",
@@ -311,7 +337,7 @@ rule align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positi
         {input.analyzePaf_bin} \
             --input {output.paf} \
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_ZOOMED_shasta_to_hg002_minimap_{wildcards.asm_preset} \
-            --pixelsPerMb 600 --minAlignmentQuality 0 --minAlignmentLength 0 > {log} 2>&1
+            --pixelsPerMb 5000 --minAlignmentQuality 0 --minAlignmentLength 0 > {log} 2>&1
 
         {input.displayPaf_bin} \
             --paf {output.paf} -r {input.hg002_reference_chunked} -a {input.subregion_shasta_assembly} \
@@ -457,6 +483,24 @@ rule vg_chunk:
 		vg convert -p {output.subgraph_vg} > {output.subgraph_pg_vg}
 		vg convert -f {output.subgraph_pg_vg} > {output.subgraph_pg_gfa}
 		"""
+
+rule annotate_gam_gaf_with_refpos:
+    output:
+        chunked_gam="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gam",
+        annotated_gam="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gam",
+        annotated_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gaf"
+    input:
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py"
+		sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz"
+        chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf"
+    threads: 16
+    shell:
+        """
+        vg convert --gaf-to-gam {input.chunked_gaf} {input.sampled_gbz} > {output.chunked_gam}
+        vg annotate -x {input.sampled_gbz} -a {output.chunked_gam} -p -P -t {threads} > {output.annotated_gam}
+        vg view -a {output.annotated_gam} -j | python {input.script} --gaf {input.chunked_gaf} --output {output.annotated_gaf}
+        """
+
 
 rule vg_index_dist:
 	output:
@@ -779,7 +823,7 @@ rule align_hifiasm_subregion_assembly_to_chunked_hg002_reference:
         {input.analyzePaf_bin} \
             --input {output.paf} \
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm_assembly/{wildcards.sample_id}_{wildcards.region_id}_hifiasm_subregion_to_hg002_minimap_{wildcards.asm_preset} \
-            --pixelsPerMb 600 --minAlignmentQuality 0 > {log} 2>&1
+            --pixelsPerMb 1000 --minAlignmentQuality 0 > {log} 2>&1
         """
 
 #------ Align shasta assembly to hifiasm assembly --------#
@@ -815,7 +859,7 @@ rule shasta_to_hifiasm_alignment:
 		{input.analyzePaf_bin} \
 			--input {output.shasta_to_hifiasm_alignment_paf} \
 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm_to_shasta_alignment/{wildcards.sample_id}_{wildcards.region_id}_hifiasm_to_shasta_minimap_{wildcards.asm_preset} \
-			--pixelsPerMb 600 --minAlignmentQuality 0 > {log} 2>&1
+			--pixelsPerMb 5000 --minAlignmentQuality 0 > {log} 2>&1
 		"""
 
 rule generate_alignment_plot_for_shasta_to_hifiasm_alignment:
