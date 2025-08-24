@@ -220,15 +220,14 @@ rule annotate_gam_gaf_with_refpos_for_positive_control:
     input:
         script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py",
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
-        sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz"
+        sampled_gbz_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz",
     threads: 16
     shell:
         """
-        vg convert --gaf-to-gam {input.chunked_gaf} {input.sampled_gbz} > {output.chunked_gam}
-        vg annotate -x {input.sampled_gbz} -a {output.chunked_gam} -p -P -t {threads} > {output.annotated_gam}
+        vg convert --gaf-to-gam {input.chunked_gaf} {input.sampled_gbz_hg2} > {output.chunked_gam}
+        vg annotate -x {input.sampled_gbz_hg2} -a {output.chunked_gam} -p -P -t {threads} > {output.annotated_gam}
         vg view -a {output.annotated_gam} -j | python {input.script} --gaf {input.chunked_gaf} --output {output.annotated_gaf}
         """
-
 
 rule run_anchor_generatation_for_positive_control:
     output:
@@ -490,8 +489,8 @@ rule annotate_gam_gaf_with_refpos:
         annotated_gam="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gam",
         annotated_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gaf"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py"
-		sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz"
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py",
+        sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz",
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf"
     threads: 16
     shell:
@@ -500,7 +499,6 @@ rule annotate_gam_gaf_with_refpos:
         vg annotate -x {input.sampled_gbz} -a {output.chunked_gam} -p -P -t {threads} > {output.annotated_gam}
         vg view -a {output.annotated_gam} -j | python {input.script} --gaf {input.chunked_gaf} --output {output.annotated_gaf}
         """
-
 
 rule vg_index_dist:
 	output:
