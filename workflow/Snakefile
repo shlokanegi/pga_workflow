@@ -81,6 +81,7 @@ def get_final_targets(wildcards):
         #--- debugging files
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_nodes_info.tsv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_read_traversals.zip", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_snarls.bandage.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
         #--- displayPaf
         # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{asm_preset}_plots", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
         # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}_displayPaf.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
@@ -95,9 +96,16 @@ def get_final_targets(wildcards):
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam", sample_id=SAMPLE_IDS, k=K, asm_preset=ASM_PRESET))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
-        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        # #---- hifiasm hap1 and hap2 assemblies ----#
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        # outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        #--- hifiasm r_utg assembly ----#
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.r_utg.fasta", sample_id=SAMPLE_IDS, k=K))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam", sample_id=SAMPLE_IDS, k=K, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
+        outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET)) 
         #--- shasta to hifiasm alignment
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.paf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
         outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_{asm_preset}_alignment_plots.pdf", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID, asm_preset=ASM_PRESET))
@@ -265,10 +273,12 @@ rule run_anchor_generatation_for_positive_control:
 rule get_debugging_files_for_positive_control:
     output:
         nodes_info_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/debugging/{region_id}_nodes_info.tsv",
-        read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/pc/debugging/{region_id}_read_traversals.zip"
+        read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/pc/debugging/{region_id}_read_traversals.zip",
+        snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/debugging/{region_id}_snarls.bandage.csv"
     input:
         script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
-        read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.reads_processed.tsv"
+        read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.reads_processed.tsv",
+        snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.snarl_compatibility.jsonl"
     shell:
         """
         python {input.script_dir}/process_read_processed_for_bandage.py {input.read_processed_tsv} -o {output.nodes_info_tsv}
@@ -277,6 +287,10 @@ rule get_debugging_files_for_positive_control:
         
         # read alignments for bandage
         python {input.script_dir}/extract_read_alignments_for_bandage.py {input.read_processed_tsv} {output.nodes_info_tsv} -o {output.read_traversals_zip}
+        
+        # reliable/unreliable snarls for bandage
+        snarl_dict="results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.forward_dict.csv"
+        python {input.script_dir}/map_snarls_bandage.py $snarl_dict {input.snarl_compatibility} {output.nodes_info_tsv} -o {output.snarls_bandage_csv}
         """
 
 rule chunk_fasta_for_positive_control:
@@ -554,7 +568,7 @@ rule generate_anchors_dictionary:
 		"logs/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary.log"
 	shell:
 		"""
-		/private/home/shnegi/.local/bin/vg_anchor build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
+		python $(which vg_anchor) build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
 			--output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph > {log} 2>&1
 		"""
 
@@ -576,7 +590,7 @@ rule get_anchors_from_gaf:
 		"logs/{sample_id}/hs-{k}/{region_id}/get_anchors_from_gaf.log"
 	shell:
 		"""
-		vg_anchor get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
+		python $(which vg_anchor) get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph.anchors.json > {log} 2>&1
 		"""
 
@@ -644,7 +658,8 @@ rule get_extended_anchor_stats:
 
 rule get_reliable_snarl_stats:
     output:
-        reliable_snarl_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats")
+        reliable_snarl_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats"),
+        snarl_compatibility_fractions="results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
     input:
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
         scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
@@ -666,10 +681,12 @@ rule get_reliable_snarl_stats:
 rule get_debugging_files:
     output:
         nodes_info_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_nodes_info.tsv",
-        read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_read_traversals.zip"
+        read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_read_traversals.zip",
+        snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_snarls.bandage.csv"
     input:
         script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
-        read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv"
+        read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv",
+        snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
     shell:
         """
         python {input.script_dir}/process_read_processed_for_bandage.py {input.read_processed_tsv} -o {output.nodes_info_tsv}
@@ -678,6 +695,10 @@ rule get_debugging_files:
         
         # read alignments for bandage
         python {input.script_dir}/extract_read_alignments_for_bandage.py {input.read_processed_tsv} {output.nodes_info_tsv} -o {output.read_traversals_zip}
+
+        # reliable/unreliable snarls for bandage
+        snarl_dict="results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph.forward_dict.csv"
+        python {input.script_dir}/map_snarls_bandage.py $snarl_dict {input.snarl_compatibility} {output.nodes_info_tsv} -o {output.snarls_bandage_csv}
         """
 
 rule chunk_hg002_reference:
@@ -813,6 +834,40 @@ rule align_hifiasm_assembly_to_reference:
         samtools index {output.bam}
         """
 
+#-------- hifiasm r_utg assembly rules --------#
+rule convert_r_utg_gfa_to_fasta:
+    output:
+        r_utg_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.r_utg.fasta"
+    benchmark: "benchmarks/{sample_id}/hs-{k}/convert_r_utg_gfa_to_fasta.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/convert_r_utg_gfa_to_fasta.log"
+    shell:
+        """
+        eval "$(micromamba shell hook --shell bash)"
+        # Convert gfa to fasta
+        micromamba activate /private/home/kkyriaki/micromamba/envs/gfatools
+        R_UTG_GFA=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/hifiasm/{wildcards.sample_id}.bp.r_utg.gfa
+        gfatools gfa2fa $R_UTG_GFA > {output.r_utg_fasta}
+        """
+
+rule align_r_utg_hifiasm_assembly_to_reference:
+    output:
+        bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam",
+        bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam.bai"
+    input:
+        hg002_reference=config["HG002v101_ref"],
+        r_utg_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.r_utg.fasta"
+    params:
+        asm_preset=config["MINIMAP"]["asmPreset"]
+    benchmark: "benchmarks/{sample_id}/hs-{k}/align_r_utg_hifiasm_assembly_to_reference_{asm_preset}.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/align_r_utg_hifiasm_assembly_to_reference_{asm_preset}.log"
+    threads: 64
+    shell:
+        """
+        minimap2 -t {threads} -I 20G -ax {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference} {input.r_utg_fasta} | \
+            samtools sort -@ {threads} -o {output.bam} -
+        samtools index {output.bam}
+        """
+
 #-------Using shasta alignment coordinates to hg002, chunk hg002 reference for hifiasm-------#
 rule chunk_hg002_reference_for_hifiasm_using_shasta_alignment_coordinates:
     output:
@@ -868,6 +923,46 @@ rule align_hifiasm_subregion_assembly_to_chunked_hg002_reference:
         {input.analyzePaf_bin} \
             --input {output.paf} \
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm_assembly/{wildcards.sample_id}_{wildcards.region_id}_hifiasm_subregion_to_hg002_minimap_{wildcards.asm_preset} \
+            --pixelsPerMb 1000 --minAlignmentQuality 0 > {log} 2>&1
+        """
+
+#------ Align r_utg hifiasm assembly to chunked hg002 reference for hifiasm assembly -------#
+rule extract_r_utg_hifiasm_subregion_assembly:
+    output:
+        r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta"
+    input:
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam",
+        bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam.bai",
+        coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
+        hifiasm_r_utg_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.r_utg.fasta"
+    params:
+        asm_preset=config["MINIMAP"]["asmPreset"]
+    log: "logs/{sample_id}/hs-{k}/{region_id}/extract_r_utg_hifiasm_subregion_assembly_{asm_preset}.log"
+    shell:
+        """
+        python3 {input.script} {input.bam} {input.coords_tsv} {input.hifiasm_r_utg_fasta} {output.r_utg_hifiasm_subregion_assembly} > {log} 2>&1
+        """
+
+rule align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference:
+    output:
+        paf="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf",
+        csv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv"
+    input:
+        analyzePaf_bin=config["ANALYSEPAF"]["bin"],
+        hg002_reference_chunked_for_hifiasm="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.fasta",
+        r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta"
+    params:
+        asm_preset=config["MINIMAP"]["asmPreset"]
+    benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference_{asm_preset}.benchmark.txt"
+    log: "logs/{sample_id}/hs-{k}/{region_id}/align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference_{asm_preset}.log"
+    threads: 64
+    shell:
+        """
+        minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked_for_hifiasm} {input.r_utg_hifiasm_subregion_assembly} > {output.paf}
+        {input.analyzePaf_bin} \
+            --input {output.paf} \
+            --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm_assembly/{wildcards.sample_id}_{wildcards.region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{wildcards.asm_preset} \
             --pixelsPerMb 1000 --minAlignmentQuality 0 > {log} 2>&1
         """
 
