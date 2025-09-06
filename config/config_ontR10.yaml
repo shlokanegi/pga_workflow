@@ -53,7 +53,9 @@ TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assem
 #   "all": Runs the sample workflow AND the positive control workflow.
 #   "no_positive_control": Runs only the sample workflow.
 #   "positive_control_only": Runs only the positive control workflow.
-RUN_MODE: "all"
+RUN_MODE: "no_positive_control"
+# Controls whether to use error corrected "ec" reads or "raw" reads
+READ_TYPE: "ec"
 
 region:
   chromosome: "chr15"
