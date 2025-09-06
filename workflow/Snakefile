@@ -1,0 +1,59 @@
+## HG002 (ONT R10) pangenome-guided assembly testing workflow
+
+import configparser
+from datetime import datetime
+
+# --- CONFIGURATION SETUP ---
+SAMPLE_IDS = config['SAMPLE_IDS']
+REGION_ID = config['region_id']
+ASM_PRESET= config['MINIMAP']['asmPreset']
+tmpdir = config['TMPDIR']
+K=config['HAPLOTYPE_SAMPLING']['num_haps']
+run_mode = config.get("RUN_MODE", "all")
+read_type = config.get("READ_TYPE", "raw")
+
+wildcard_constraints:
+    region_id=REGION_ID,
+    sample_id=r"PAW.*",
+    asm_preset=r"asm[0-9]+"
+
+include: "rules/final_targets.smk"
+include: "rules/hifiasm.smk"
+
+if read_type == "ec":
+	if run_mode == "positive_control_only":
+		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only error correction targets from positive control workflow.")
+		include: "rules/pc_error_correction.smk"
+	elif run_mode == "no_positive_control":
+		print(f"INFO: READ_TYPE is '{read_type}'. Collecting error correction targets from PGA workflow.")
+		include: "rules/pga_error_correction.smk"
+else:
+	if run_mode == "positive_control_only":
+		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from positive control workflow.")
+		include: "rules/positive_control.smk"
+	elif run_mode == "no_positive_control":
+		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from PGA workflow.")
+		include: "rules/pga.smk"
+
+
+rule all:
+    input:
+        get_final_targets
+
+rule chunk_hg002_reference:
+	output:
+		chunked_reference="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta"
+	input:
+		hg002_reference=config["HG002v101_ref"]
+	params:
+		mat_range=config['region']['chromosome'] + "_MATERNAL:" + str(int(config['region']['start']) - config['region']['flank']) + "-" + str(int(config['region']['end']) + config['region']['flank']),
+		pat_range=config['region']['chromosome'] + "_PATERNAL:" + str(int(config['region']['start']) - config['region']['flank']) + "-" + str(int(config['region']['end']) + config['region']['flank'])
+	benchmark:
+		"benchmarks/{sample_id}/hs-{k}/{region_id}/chunk_hg002_reference.benchmark.txt"
+	log:
+		"logs/{sample_id}/hs-{k}/{region_id}/chunk_hg002_reference.log"
+	shell:
+		"""
+		echo {params.mat_range} {params.pat_range} > {log} 2>&1
+		samtools faidx {input.hg002_reference} {params.mat_range} {params.pat_range} > {output.chunked_reference}
+		"""
