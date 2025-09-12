@@ -1,6 +1,6 @@
 def get_final_targets(wildcards):
     outputs = []
-    # outputs.extend(expand("results/reads/{sample_id}.fasta", sample_id=SAMPLE_IDS))
+    outputs.extend(expand("results/reads/{sample_id}.fasta", sample_id=SAMPLE_IDS))
     outputs.extend(expand("results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta", sample_id=SAMPLE_IDS, k=K, region_id=REGION_ID))
     #--- hifiasm
     outputs.extend(expand("results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.gfa", sample_id=SAMPLE_IDS, k=K))

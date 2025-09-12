@@ -11,7 +11,7 @@ rule prepare_haplotype_sampling_for_ec_reads_for_positive_control:
         kff="results_hs/hs-{k}/reads/{sample_id}.ec.kff",
         graph_gbz_hg2=config["graph_base_hg2"] + ".gbz",
         graph_hapl_hg2=config["graph_base_hg2"] + ".hapl",
-        awk_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
+        awk_script=config["scripts_dir"] + "/process_out.awk",
         ec_fq="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.ec.fq"
     params:
         k=config["HAPLOTYPE_SAMPLING"]["num_haps"],
@@ -19,6 +19,7 @@ rule prepare_haplotype_sampling_for_ec_reads_for_positive_control:
     benchmark: "benchmarks/{sample_id}/hs-{k}/prepare_haplotype_sampling_for_ec_reads_for_positive_control.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/prepare_haplotype_sampling_for_ec_reads_for_positive_control.log"
     threads: 128
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         echo "------Haplotype sampling of HG2 graph------"
@@ -60,6 +61,7 @@ rule vg_chunk_and_index_for_ec_reads_for_positive_control:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/vg_chunk_and_index_for_ec_reads_for_positive_control.log"
 	threads: 128
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
 		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/chunk
@@ -75,14 +77,16 @@ rule run_generate_anchors_dictionary_for_ec_reads_for_positive_control:
     output:
         anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.pkl"
     input:
+        vg-anchors_config=config["vg-anchors_config"],
         sampled_pg_vg_hg2_ec="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.ec.pg.vg",
         subgraph_pg_dist_hg2_ec="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/chunk/subgraph.hg2.pg.dist",
     benchmark:
         "benchmarks/{sample_id}/hs-{k}/{region_id}/run_generate_anchors_dictionary_for_ec_reads_for_positive_control.benchmark.txt"
+    container: "docker://quay.io/shnegi/pga_vg-anchors:1.0.1"
     shell:
         """
         mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/anchors
-        vg_anchor build --graph {input.sampled_pg_vg_hg2_ec} --index {input.subgraph_pg_dist_hg2_ec} \
+        vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg_hg2_ec} --index {input.subgraph_pg_dist_hg2_ec} \
             --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/anchors/subgraph
         """
 
@@ -92,8 +96,7 @@ rule chunk_fasta_for_ec_reads_for_positive_control:
 	input:
 		chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/chunk/subgraph.hg2.gaf",
 		fasta="results_hs/hs-{k}/reads/{sample_id}.ec.fasta"
-	container:
-		"docker://pegi3s/seqkit:latest"
+	container: "docker://pegi3s/seqkit:latest"
 	shell:
 		"""
 		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/shasta
@@ -109,6 +112,7 @@ rule run_get_anchors_from_gaf_for_ec_reads_for_positive_control:
         read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.anchors.json.reads_processed.tsv",
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/params_run.log"
     input:
+        vg-anchors_config=config["vg-anchors_config"],
         anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.pkl",
         sampled_pg_vg_hg2_ec="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.ec.pg.vg",
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/chunk/subgraph.hg2.gaf",
@@ -117,7 +121,7 @@ rule run_get_anchors_from_gaf_for_ec_reads_for_positive_control:
         "benchmarks/{sample_id}/hs-{k}/{region_id}/run_get_anchors_from_gaf_for_ec_reads_for_positive_control.benchmark.txt"
     shell:
         """
-        vg_anchor get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg_hg2_ec} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
+        vg-anchors --config {input.vg-anchors_config} get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg_hg2_ec} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/anchors/subgraph.anchors.json
         """
 
@@ -148,7 +152,7 @@ rule get_extended_anchor_stats_for_ec_reads_for_positive_control:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/extended_anchor_stats")
     input:
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir=config["scripts_dir"],
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.anchors.json.extended.jsonl",
         # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.anchors.json.extended.pruned.jsonl",
         subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/shasta/ShastaRun/Assembly.fasta",
@@ -156,6 +160,7 @@ rule get_extended_anchor_stats_for_ec_reads_for_positive_control:
     params:
         region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end'],
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats_for_ec_reads_for_positive_control.log"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/extended_anchor_stats
@@ -176,8 +181,9 @@ rule get_reliable_snarl_stats_for_ec_reads_for_positive_control:
         snarl_compatibility_fractions="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
     input:
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.anchors.json.extended.jsonl",
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir=config["scripts_dir"],
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats_for_ec_reads_for_positive_control.log"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         #------- Generate reliable snarl stats --------#
@@ -199,9 +205,10 @@ rule get_debugging_files_for_ec_reads_for_positive_control:
         read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/debugging/{region_id}_read_traversals.zip",
         snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/debugging/{region_id}_snarls.bandage.csv"
     input:
-        script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        script_dir=config["scripts_dir"],
         read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.anchors.json.reads_processed.tsv",
         snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         python {input.script_dir}/process_read_processed_for_bandage.py {input.read_processed_tsv} -o {output.nodes_info_tsv}
@@ -248,12 +255,13 @@ rule run_displayPafAlignments_for_ec_reads_for_positive_control:
 		hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
 		subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/shasta/ShastaRun/Assembly.fasta",
 		paf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf",
-		R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R"
+		R_script=config["scripts_dir"] + "/analyse_displayPaf_outputs.R"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"],
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_ec_reads_for_positive_control_{asm_preset}.benchmark.txt"
 	log: "logs/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_ec_reads_for_positive_control_{asm_preset}.log"
-	shell:
+	container: "docker://quay.io/shnegi/pga_python-r:latest"
+    shell:
 		"""
 		{input.displayPaf_bin} \
 			--paf {input.paf} -r {input.hg002_reference_chunked} -a {input.subregion_shasta_assembly} \
@@ -270,11 +278,12 @@ rule chunk_hg002_reference_for_hifiasm_using_shasta_alignment_coordinates_for_ec
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv"
     input:
         hg002_reference=config["HG002v101_ref"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
+        script=config["scripts_dir"] + "/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
         shasta_csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.csv",
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
     log: "logs/{sample_id}/hs-{k}/{region_id}/chunk_hg002_reference_for_hifiasm_using_shasta_alignment_coordinates_for_ec_reads_for_positive_control_{asm_preset}.log"
+    container: "docker://mkolmogo/card_minimap2:2.23"
     shell:
         """
         python3 {input.script} {input.shasta_csv} {input.hg002_reference} \
@@ -287,7 +296,7 @@ rule extract_hifiasm_subregion_assembly_for_ec_reads_for_positive_control:
     output:
         hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        script=config["scripts_dir"] + "/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -295,6 +304,7 @@ rule extract_hifiasm_subregion_assembly_for_ec_reads_for_positive_control:
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
     log: "logs/{sample_id}/hs-{k}/{region_id}/extract_hifiasm_subregion_assembly_for_ec_reads_for_positive_control_{asm_preset}.log"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         python3 {input.script} {input.bam} {input.coords_tsv} {input.hifiasm_fasta} {output.hifiasm_subregion_assembly} > {log} 2>&1
@@ -313,6 +323,7 @@ rule align_hifiasm_subregion_assembly_to_chunked_hg002_reference_for_ec_reads_fo
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_hifiasm_subregion_assembly_to_chunked_hg002_reference_for_ec_reads_for_positive_control_{asm_preset}.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/{region_id}/align_hifiasm_subregion_assembly_to_chunked_hg002_reference_for_ec_reads_for_positive_control_{asm_preset}.log"
     threads: 64
+    container: "docker://mkolmogo/card_minimap2:2.23"
     shell:
         """
         minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked_for_hifiasm} {input.hifiasm_subregion_assembly} > {output.paf}
@@ -328,7 +339,7 @@ rule extract_r_utg_hifiasm_subregion_assembly_for_ec_reads_for_positive_control:
     output:
         r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        script=config["scripts_dir"] + "/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -336,6 +347,7 @@ rule extract_r_utg_hifiasm_subregion_assembly_for_ec_reads_for_positive_control:
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
     log: "logs/{sample_id}/hs-{k}/{region_id}/extract_r_utg_hifiasm_subregion_assembly_for_ec_reads_for_positive_control_{asm_preset}.log"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         python3 {input.script} {input.bam} {input.coords_tsv} {input.hifiasm_r_utg_fasta} {output.r_utg_hifiasm_subregion_assembly} > {log} 2>&1
@@ -354,6 +366,7 @@ rule align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference_for_ec_re
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference_for_ec_reads_for_positive_control_{asm_preset}.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/{region_id}/align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference_for_ec_reads_for_positive_control_{asm_preset}.log"
     threads: 64
+    container: "docker://mkolmogo/card_minimap2:2.23"
     shell:
         """
         minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference_chunked_for_hifiasm} {input.r_utg_hifiasm_subregion_assembly} > {output.paf}
@@ -378,7 +391,8 @@ rule shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control:
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.benchmark.txt"
 	log: "logs/{sample_id}/hs-{k}/{region_id}/shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.log"
 	threads: 128
-	shell:
+	container: "docker://mkolmogo/card_minimap2:2.23"
+    shell:
 		"""
 		# Generate index for hifiasm assembly
 		samtools faidx {input.hifiasm_subregion_assembly}
@@ -403,13 +417,14 @@ rule generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads_for_po
 	output:
 		alignment_plots_pdf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_{asm_preset}_alignment_plots.pdf"
 	input:
-		r_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_alignment_diagonal_plot.R",
+		r_script=config["scripts_dir"] + "/generate_alignment_diagonal_plot.R",
 		shasta_to_hifiasm_alignment_paf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.paf"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"]
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.benchmark.txt"
 	log: "logs/{sample_id}/hs-{k}/{region_id}/generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.log"
-	shell:
+	container: "docker://quay.io/shnegi/pga_python-r:latest"
+    shell:
 		"""
 		# Create output directory
 		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/shasta_to_hifiasm_alignment
@@ -427,11 +442,12 @@ rule generate_run_summary_for_ec_reads_for_positive_control:
     input:
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/params_run.log",
         shasta_conf=config["SHASTA"]["conf"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+        script=config["scripts_dir"] + "/generate_runlog.py"
     params:
         run_mode=config['RUN_MODE'],
         region_id=config['region_id'],
         asm_preset=config['MINIMAP']['asmPreset']
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         python3 {input.script} --params-log {input.params_log} --shasta-conf {input.shasta_conf} --output-log {output.pga_log} --run-mode {params.run_mode} --region-id {params.region_id} --asm-preset {params.asm_preset}

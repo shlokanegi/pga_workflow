@@ -21,19 +21,19 @@ include: "rules/final_targets.smk"
 include: "rules/hifiasm.smk"
 
 if read_type == "ec":
-	if run_mode == "positive_control_only":
-		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only error correction targets from positive control workflow.")
-		include: "rules/pc_error_correction.smk"
-	elif run_mode == "no_positive_control":
-		print(f"INFO: READ_TYPE is '{read_type}'. Collecting error correction targets from PGA workflow.")
-		include: "rules/pga_error_correction.smk"
+    if run_mode == "positive_control_only":
+        # print(f"INFO: READ_TYPE is '{read_type}'. Collecting only error correction targets from positive control workflow.")
+        include: "rules/pc_error_correction.smk"
+    elif run_mode == "no_positive_control":
+        # print(f"INFO: READ_TYPE is '{read_type}'. Collecting error correction targets from PGA workflow.")
+        include: "rules/pga_error_correction.smk"
 else:
-	if run_mode == "positive_control_only":
-		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from positive control workflow.")
-		include: "rules/positive_control.smk"
-	elif run_mode == "no_positive_control":
-		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from PGA workflow.")
-		include: "rules/pga.smk"
+    if run_mode == "positive_control_only":
+        # print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from positive control workflow.")
+        include: "rules/positive_control.smk"
+    elif run_mode == "no_positive_control":
+        # print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from PGA workflow.")
+        include: "rules/pga.smk"
 
 
 rule all:

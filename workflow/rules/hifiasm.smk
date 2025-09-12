@@ -5,15 +5,13 @@ rule run_hifiasm:
         hp2_gfa="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa",
         ec_fq="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.ec.fq"
     input:
-        ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
+        ont_r10_sequence=config["raw_reads_dir"] + "/{sample_id}/{sample_id}.fastq"
     benchmark: "benchmarks/{sample_id}/hs-{k}/run_hifiasm.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/run_hifiasm.log"
     threads: 128
+    container: "docker://quay.io/shnegi/hifiasm:0.25.0"
     shell:
         """
-        eval "$(micromamba shell hook --shell bash)"
-        # Run hifiasm
-        micromamba activate /private/home/kkyriaki/micromamba/envs/hifiasm_v0.25.0
         hifiasm --ont -t {threads} -o results_hs/hs-{wildcards.k}/{wildcards.sample_id}/hifiasm/{wildcards.sample_id} --write-ec {input.ont_r10_sequence} > {log} 2>&1
         """
 
@@ -38,11 +36,9 @@ rule convert_gfa_to_fasta:
     benchmark: "benchmarks/{sample_id}/hs-{k}/convert_gfa_to_fasta.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/convert_gfa_to_fasta.log"
     threads: 128
+    container: "docker://quay.io/shnegi/hifiasm:0.25.0"
     shell:
         """
-        eval "$(micromamba shell hook --shell bash)"
-        # Convert gfa to fasta
-        micromamba activate /private/home/kkyriaki/micromamba/envs/gfatools
         gfatools gfa2fa {input.hp1_gfa} > {output.hp1_fasta}
         gfatools gfa2fa {input.hp2_gfa} > {output.hp2_fasta}
         """
@@ -70,6 +66,7 @@ rule align_hifiasm_assembly_to_reference:
     benchmark: "benchmarks/{sample_id}/hs-{k}/align_hifiasm_assembly_to_reference_{asm_preset}.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/align_hifiasm_assembly_to_reference_{asm_preset}.log"
     threads: 64
+    container: "docker://mkolmogo/card_minimap2:2.23"
     shell:
         """
         minimap2 -t {threads} -I 20G -ax {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference} {input.hifiasm_assembly} | \
@@ -83,11 +80,9 @@ rule convert_r_utg_gfa_to_fasta:
         r_utg_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.r_utg.fasta"
     benchmark: "benchmarks/{sample_id}/hs-{k}/convert_r_utg_gfa_to_fasta.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/convert_r_utg_gfa_to_fasta.log"
+    container: "docker://quay.io/shnegi/hifiasm:0.25.0"
     shell:
         """
-        eval "$(micromamba shell hook --shell bash)"
-        # Convert gfa to fasta
-        micromamba activate /private/home/kkyriaki/micromamba/envs/gfatools
         R_UTG_GFA=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/hifiasm/{wildcards.sample_id}.bp.r_utg.gfa
         gfatools gfa2fa $R_UTG_GFA > {output.r_utg_fasta}
         """
@@ -104,6 +99,7 @@ rule align_r_utg_hifiasm_assembly_to_reference:
     benchmark: "benchmarks/{sample_id}/hs-{k}/align_r_utg_hifiasm_assembly_to_reference_{asm_preset}.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/align_r_utg_hifiasm_assembly_to_reference_{asm_preset}.log"
     threads: 64
+    container: "docker://mkolmogo/card_minimap2:2.23"
     shell:
         """
         minimap2 -t {threads} -I 20G -ax {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference} {input.r_utg_fasta} | \

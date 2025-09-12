@@ -2,27 +2,32 @@
 
 SAMPLE_IDS:
   - PAW70337
-  # - PAW71238
-
-# graph_base: "/private/groups/patenlab/anovak/projects/hprc/lr-giraffe/graphs/hprc-v1.1-mc-chm13.d9"
-# graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v1.1-mc-chm13.d9.snarls"
-
-# ############# V2 frequency filtered graphs ################
-# graph_base: "/private/home/ghickey/dev/work/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval.d46"
-# graph_snarl: "/private/groups/migalab/shnegi/vg_anchors_project/graphs/hprc-v2.0-mc-chm13-eval.d46.snarls"
-
-############ V2 normal graph for haplotype-sampling ################
-graph_base: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval"
-
-############ V2 normal graph with HG002 assembly included, to be used as a positive control ################
-graph_base_hg2: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13/hprc-v2.0-mc-chm13"
-# graph_snarl: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval.snarls" # use only when doing full v2 graph mapping
+  - PAW71238
 
 
+# --- Paths to data ---
+raw_reads_dir: "/path/to/your/raw/reads/"
+
+
+# --- Path to scripts ---
+scripts_dir: "workflow/scripts"
+
+
+# --- Paths to Reference Genomes and Graphs ---
+# These paths should be updated to point to the location of the files on your system.
+############ HPRC V2 graph for haplotype-sampling ################
+graph_base: "/path/to/your/hprc-v2.0-mc-chm13-eval"
+############ V2 graph with HG002 assembly included, to be used as a positive control ################
+graph_base_hg2: "/path/to/your/hprc-v2.0-mc-chm13"
 minparams: "k31.w50.W"
-chm13_ref: "/private/groups/migalab/references/CHM13/chm13v2.0.fa"
-HG002v101_ref: "/private/groups/migalab/kkyriaki/references/unziped/hg002v1.0.1.fasta"
 
+
+# --- Reference genome paths ---
+chm13_ref: "/path/to/your/chm13v2.0.fa"
+HG002v101_ref: "/path/to/your/hg002v1.0.1.fasta"
+
+
+# --- Minimap2 configuration ---
 MINIMAP:
   kmerSize: 17
   minibatchSize: "5G"
@@ -30,6 +35,8 @@ MINIMAP:
   eqxString: "--eqx"  # if not, then ""
   asmPreset: "asm10"
 
+
+# --- Haplotype sampling configuration ---
 HAPLOTYPE_SAMPLING:
   k: 29
   m: 128
@@ -37,29 +44,38 @@ HAPLOTYPE_SAMPLING:
   num_haps: 16
   diploid_sampling: False
 
+
+# --- vg-anchors configuration ---
+vg-anchors_config: "workflow/vg-anchors/config.ini"
+
+
+# --- Tool Configuration ---
 ANALYSEPAF:
-  bin: "/private/groups/migalab/shnegi/vg_anchors_project/analyzePaf"
-
+  bin: "workflow/shasta/analyzePaf"
 DISPLAYPAF:
-  bin: "/private/groups/migalab/shnegi/vg_anchors_project/DisplayPafAlignments"
-
+  bin: "workflow/shasta/DisplayPafAlignments"
 SHASTA:
-  bin: "/private/groups/migalab/shnegi/vg_anchors_project/shasta"
-  conf: "/private/groups/migalab/shnegi/vg_anchors_project/anchors.conf"
+  bin: "workflow/shasta/shasta"
+  conf: "workflow/shasta/anchors.conf"
 
-TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp"
 
-# Control which part of the workflow to run.
-#   "all": Runs the sample workflow AND the positive control workflow.
-#   "no_positive_control": Runs only the sample workflow.
-#   "positive_control_only": Runs only the positive control workflow.
+# --- Setup the temporary directory ---
+TMPDIR: "../tmp"  # Or change to your desired temporary directory for intermediate files
+
+
+# --- Run mode and read type ---
+    # Control which part of the workflow to run.
+    #   "no_positive_control": Runs only the sample workflow.
+    #   "positive_control_only": Runs only the positive control workflow.
 RUN_MODE: "no_positive_control"
-# Controls whether to use error corrected "ec" reads or "raw" reads
-READ_TYPE: "ec"
+    # Controls whether to use error corrected "ec" reads or "raw" reads for assembly
+READ_TYPE: "raw"
 
+
+# --- Region to assemble ---
 region:
-  chromosome: "chr15"
-  start: "41306922"
-  end: "41625624"
-  flank: 5000000
-region_id: "strc"
+  chromosome: "chr16"
+  start: "2160175"
+  end: "3022916"
+  flank: 1000000
+region_id: "PDPK"

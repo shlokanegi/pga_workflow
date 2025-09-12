@@ -11,14 +11,15 @@ rule prepare_positive_control:
         kff="results/reads/{sample_id}.kff",
         graph_gbz_hg2=config["graph_base_hg2"] + ".gbz",
         graph_hapl_hg2=config["graph_base_hg2"] + ".hapl",
-        awk_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
-        ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
+        awk_script=config["scripts_dir"] + "/process_out.awk",
+        ont_r10_sequence=config["raw_reads_dir"] + "/{sample_id}/{sample_id}.fastq"
     params:
         k=config["HAPLOTYPE_SAMPLING"]["num_haps"],
         diploid_sampling="--diploid_sampling" if config["HAPLOTYPE_SAMPLING"]["diploid_sampling"] else ""
     benchmark: "benchmarks/{sample_id}/hs-{k}/prepare_positive_control.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/prepare_positive_control.log"
     threads: 128
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         echo "------Haplotype sampling of HG2 graph------"
@@ -60,6 +61,7 @@ rule vg_chunk_and_index_positive_control:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/vg_chunk_and_index_positive_control.log"
 	threads: 128
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0" 
 	shell:
 		"""
 		vg chunk -a {input.sorted_gaf_hg2} -F -g -x {input.sampled_gbz_hg2} -p {params.region} -S {input.snarls_hg2} --trace -t {threads} -b {params.prefix} > {output.subgraph_vg_hg2} 2> {log}
@@ -76,10 +78,11 @@ rule annotate_gam_gaf_with_refpos_for_positive_control:
         annotated_gam="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.refpos.gam",
         annotated_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.refpos.gaf"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py",
+        script=config["scripts_dir"] + "/add_refpos_gam_to_gaf.py",
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
         sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.gbz"
     threads: 16
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         sort {input.chunked_gaf} | uniq > {output.chunked_gaf_uniq}
@@ -97,6 +100,7 @@ rule run_anchor_generatation_for_positive_control:
         pruned_anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl",
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log"
     input:
+        vg-anchors_config=config["vg-anchors_config"],
         sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
         subgraph_pg_dist_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist",
         chunked_gaf_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
@@ -105,10 +109,10 @@ rule run_anchor_generatation_for_positive_control:
         "benchmarks/{sample_id}/hs-{k}/{region_id}/run_anchor_generatation_for_positive_control.benchmark.txt"
     shell:
         """
-        vg_anchor build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist_hg2} \
+        vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist_hg2} \
             --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph
 
-        vg_anchor get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf_hg2} --fasta {input.chunked_fasta_hg2}
+        vg-anchors --config {input.vg-anchors_config} get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf_hg2} --fasta {input.chunked_fasta_hg2}
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json
         """
 
@@ -119,8 +123,7 @@ rule chunk_fasta_for_positive_control:
     input:
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
         fasta="results/reads/{sample_id}.fasta"
-    container:
-        "docker://pegi3s/seqkit:latest"
+    container: "docker://pegi3s/seqkit:latest"
     shell:
         """
         # Extract READ IDs from chunked GAF and then extract fasta records for these reads
@@ -134,7 +137,6 @@ rule run_shasta_assembly_for_positive_control:
         chunked_fasta = "results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta",
         shasta_conf = config["SHASTA"]["conf"],
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
-        # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl"
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_shasta_assembly_for_positive_control.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/{region_id}/run_shasta_assembly_for_positive_control.log"
     shell:
@@ -152,14 +154,14 @@ rule get_extended_anchor_stats_for_positive_control:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/pc/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/extended_anchor_stats")
     input:
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir=config["scripts_dir"],
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
-        # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl",
         subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/ShastaRun/Assembly.fasta",
         chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/pc/shasta/{sample_id}.subregion.fasta"
     params:
         region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end'],
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats_for_positive_control.log"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/extended_anchor_stats
@@ -178,9 +180,10 @@ rule get_reliable_snarl_stats_for_positive_control:
         reliable_snarl_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/pc/reliable_snarl_stats"),
         snarl_compatibility_fractions="results_hs/hs-{k}/{sample_id}/{region_id}/pc/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
     input:
-        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir=config["scripts_dir"],
+        anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl"
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats_for_positive_control.log"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         #------- Generate reliable snarl stats --------#
@@ -190,7 +193,7 @@ rule get_reliable_snarl_stats_for_positive_control:
         snarl_coverage_json=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json.snarl_coverage.jsonl
         snarl_allelic_coverage_json=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json.snarl_allelic_coverage.jsonl
         snarl_allelic_coverage_extended_json=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json.snarl_allelic_coverage_extended.jsonl
-        snarl_variant_type_json=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json.snarl_variant_type.jsonl
+        snarl_variant_type_json=results_hs/hs-{k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json.snarl_variant_type.jsonl
         snarl_positions_tsv=results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.sizes.tsv
 
         Rscript {input.scripts_dir}/reliable_snarl_stats_test.R $reliable_snarls_tsv $snarl_compatibility_json $snarl_coverage_json $snarl_allelic_coverage_json $snarl_allelic_coverage_extended_json $snarl_variant_type_json $snarl_positions_tsv $output_dir >> {log} 2>&1
@@ -202,9 +205,10 @@ rule get_debugging_files_for_positive_control:
         read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/pc/debugging/{region_id}_read_traversals.zip",
         snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/debugging/{region_id}_snarls.bandage.csv"
     input:
-        script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        script_dir=config["scripts_dir"],
         read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.reads_processed.tsv",
         snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/pc/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         python {input.script_dir}/process_read_processed_for_bandage.py {input.read_processed_tsv} -o {output.nodes_info_tsv}
@@ -215,10 +219,9 @@ rule get_debugging_files_for_positive_control:
         python {input.script_dir}/extract_read_alignments_for_bandage.py {input.read_processed_tsv} {output.nodes_info_tsv} -o {output.read_traversals_zip}
 
         # reliable/unreliable snarls for bandage
-        snarl_dict="results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.forward_dict.csv"
+        snarl_dict="results_hs/hs-{k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.forward_dict.csv"
         python {input.script_dir}/map_snarls_bandage.py $snarl_dict {input.snarl_compatibility} {output.nodes_info_tsv} -o {output.snarls_bandage_csv}
         """
-
 
 rule align_assembly_to_chunked_reference_and_run_displayPafAlignments_for_positive_control:
     output:
@@ -255,11 +258,12 @@ rule generate_run_summary_positive_control:
     input:
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log",
         shasta_conf=config["SHASTA"]["conf"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+        script=config["scripts_dir"] + "/generate_runlog.py"
     params:
         run_mode=config['RUN_MODE'],
         region_id=config['region_id'],
         asm_preset=config['MINIMAP']['asmPreset']
+    container: "docker://quay.io/shnegi/pga_python-r:latest"
     shell:
         """
         python3 {input.script} --params-log {input.params_log} --shasta-conf {input.shasta_conf} --output-log {output.pga_log} --run-mode {params.run_mode} --region-id {params.region_id} --asm-preset {params.asm_preset}

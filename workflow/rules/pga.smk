@@ -1,19 +1,19 @@
 # --------- PGA workflow with raw reads --------- #
 
-# rule convert_fq_to_fasta:
-#     output:
-#         fasta="results/reads/{sample_id}.fasta"
-#     input:
-#         ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
-#     benchmark:
-#         "benchmarks/{sample_id}/convert_fq_to_fasta.benchmark.txt"
-#     log:
-#         "logs/{sample_id}/convert_fq_to_fasta.log"
-#     shell:
-#         """
-#         # Convert FASTQ to FASTA
-#         cat {input.ont_r10_sequence} | awk '{{if(NR%4==1) {{printf(">%s\\n",substr($0,2));}} else if(NR%4==2) print;}}' > {output.fasta}
-#         """
+rule convert_fq_to_fasta:
+    output:
+        fasta="results/reads/{sample_id}.fasta"
+    input:
+        ont_r10_sequence=config["raw_reads_dir"] + "/{sample_id}/{sample_id}.fastq"
+    benchmark:
+        "benchmarks/{sample_id}/convert_fq_to_fasta.benchmark.txt"
+    log:
+        "logs/{sample_id}/convert_fq_to_fasta.log"
+    shell:
+        """
+        # Convert FASTQ to FASTA
+        cat {input.ont_r10_sequence} | awk '{{if(NR%4==1) {{printf(">%s\\n",substr($0,2));}} else if(NR%4==2) print;}}' > {output.fasta}
+        """
 
 rule count_kmers:
     output:
@@ -25,6 +25,7 @@ rule count_kmers:
     log:
         "logs/{sample_id}/convert_fq_to_fasta.log"
     threads: 128
+    conda: "../envs/kmc.yaml"
     shell:
         """
         # Count kmers from sequencing reads
@@ -47,6 +48,7 @@ rule haplotype_sample_graph:
     log:
         "logs/{sample_id}/hs-{k}/haplotype_sample_graph.log"
     threads: 128
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         vg haplotypes -v 2 -t {threads} --include-reference {params.diploid_sampling} --num-haplotypes {params.k} \
@@ -65,6 +67,7 @@ rule generate_sampled_graph_indexes:
     log:
         "logs/{sample_id}/hs-{k}/generate_sampled_graph_indexes.log"
     threads: 128
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         vg autoindex -G {input.sampled_gbz} -t {threads} -p results_hs/graph/{wildcards.sample_id}/{wildcards.sample_id}-{wildcards.k}-sampled -w lr-giraffe > {log} 2>&1
@@ -74,17 +77,18 @@ rule align_reads_with_vg_giraffe:
     output:
         alignment="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
+        script=config["scripts_dir"] + "/process_out.awk",
         sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz",
         distance_index="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.dist",
         minimizer_index="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.withzip.min",
         zipcodes="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.zipcodes",
-        ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
+        ont_r10_sequence=config["raw_reads_dir"] + "/{sample_id}/{sample_id}.fastq"
     benchmark:
         "benchmarks/{sample_id}/hs-{k}/align_reads_with_vg_giraffe.benchmark.txt"
     log:
         "logs/{sample_id}/hs-{k}/align_reads_with_vg_giraffe.log"
     threads: 128
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         vg giraffe -t {threads} --parameter-preset r10 -f {input.ont_r10_sequence} -Z {input.sampled_gbz} -d {input.distance_index} -m {input.minimizer_index} -z {input.zipcodes} --output-format gaf 2> {log} | {input.script} | zstd > {output.alignment}
@@ -94,7 +98,7 @@ rule parse_gaf:
     output:
         file="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/parse_gaf.py",
+        script=config["scripts_dir"] + "/parse_gaf.py",
         gaf="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
     log:
         "logs/{sample_id}/hs-{k}/parse_gaf.log"
@@ -111,6 +115,7 @@ rule sort_index_gaf:
 	input:
 		combined_gaf="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf"
 	threads: 64
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
 		vg gamsort -t {threads} -p -G {input.combined_gaf} | bgzip -c > {output.sorted_gaf}
@@ -125,6 +130,7 @@ rule vg_convert_graph:
 	benchmark:
 		"benchmarks/{sample_id}/hs-{k}/vg_convert_graph.benchmark.txt"
 	threads: 128
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
 		vg convert -t {threads} {input.sampled_gbz} -p > {output.sampled_pg_vg}
@@ -136,6 +142,7 @@ rule compute_snarls:
 	input:
 		sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz"
 	threads: 32
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
 		vg snarls -t {threads} -T {input.sampled_gbz} > {output.snarls}
@@ -161,6 +168,7 @@ rule vg_chunk:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/vg_chunk.log"
 	threads: 128
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
         vg chunk -a {input.sorted_gaf} -F -g -x {input.sampled_gbz} -p {params.region} -S {input.snarls} --trace -t {threads} -b {params.prefix} > {output.subgraph_vg}
@@ -176,10 +184,11 @@ rule annotate_gam_gaf_with_refpos:
         annotated_gam="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gam",
         annotated_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gaf"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py",
+        script=config["scripts_dir"] + "/add_refpos_gam_to_gaf.py",
         sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz",
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf"
     threads: 16
+    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
     shell:
         """
         sort {input.chunked_gaf} | uniq > {output.chunked_gaf_uniq}
@@ -196,6 +205,7 @@ rule vg_index_dist:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/vg_index_dist.log"
 	threads: 32
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
 		vg index {input.subgraph_pg_vg} --threads {threads} --dist-name {output.subgraph_pg_dist}
@@ -203,18 +213,19 @@ rule vg_index_dist:
 
 rule generate_anchors_dictionary:
 	output:
-		anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl",
-		profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/build.prof"
+		anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl"
 	input:
+        vg-anchors_config=config["vg-anchors_config"],
 		subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.dist",
 		sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.pg.vg"
 	benchmark:
 		"benchmarks/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary.benchmark.txt"
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary.log"
-	shell:
+	container: "docker://quay.io/shnegi/pga_vg-anchors:1.0.1"
+    shell:
 		"""
-		python -m cProfile -o {output.profile_data} $(which vg_anchor) build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
+		vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
 			--output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph > {log} 2>&1
 		"""
 
@@ -224,9 +235,9 @@ rule get_anchors_from_gaf:
 		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
         read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv",
         pruned_anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl",
-		params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log",
-		profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/get_anchors.prof"
+		params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log"
 	input:
+        vg-anchors_config=config["vg-anchors_config"],
 		anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl",
 		chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf",
 		sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.pg.vg",
@@ -235,9 +246,10 @@ rule get_anchors_from_gaf:
 		"benchmarks/{sample_id}/hs-{k}/{region_id}/get_anchors_from_gaf.benchmark.txt"
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/get_anchors_from_gaf.log"
-	shell:
+	container: "docker://quay.io/shnegi/pga_vg-anchors:1.0.1"
+    shell:
 		"""
-		python -m cProfile -o {output.profile_data} $(which vg_anchor) get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
+		vg-anchors --config {input.vg-anchors_config} get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph.anchors.json > {log} 2>&1
 		"""
 
@@ -256,29 +268,6 @@ rule chunk_fasta:
         # Extract READ IDs from chunked GAF and then extract fasta records for these reads
         cut -f1 {input.chunked_gaf} | sort -u -T {config[TMPDIR]}| seqkit grep -f - {input.fasta} > {output.chunked_fasta}
         """
-
-# rule align_reads_to_linear_reference:
-# 	output:
-# 		alignment_bam = "results_hs/alignment_chm13/{sample_id}/{sample_id}_to_CHM13_minimap.bam",
-# 		alignment_bam_idx = "results_hs/alignment_chm13/{sample_id}/{sample_id}_to_CHM13_minimap.bam.bai"
-# 	input:
-# 		fastq="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq",
-# 		reference=config["chm13_ref"]
-# 	params:
-# 		mapMode="map-ont",
-# 		kmerSize=config["MINIMAP"]["kmerSize"],
-# 		minibatchSize=config["MINIMAP"]["minibatchSize"],
-# 		mdString=config["MINIMAP"]["mdString"],
-# 		eqxString=config["MINIMAP"]["eqxString"]
-# 	benchmark: "benchmarks/{sample_id}/align_reads_to_linear_reference.benchmark.txt"
-# 	log: "logs/{sample_id}/align_reads_to_linear_reference.log"
-# 	container: "docker://mkolmogo/card_minimap2:2.23"
-# 	threads: 64
-# 	shell:
-# 		"""
-# 		minimap2 -ax {params.mapMode} {input.reference} {input.fastq} -k {params.kmerSize} -y -K {params.minibatchSize} -t {threads} {params.mdString} {params.eqxString} | samtools sort -@16 - > {output.alignment_bam}
-# 		samtools index -@ {threads} {output.alignment_bam}
-# 		"""
 
 rule run_shasta_assembly:
 	output: "results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta"
@@ -300,34 +289,12 @@ rule run_shasta_assembly:
 			--config {input.shasta_conf} --anchors results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/shasta/anchors.json --memoryMode filesystem --memoryBacking disk > {log} 2>&1
 		"""
 
-# rule align_assembly_to_reference:
-# 	output:
-# 		paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_shasta_to_hg002_minimap_{asm_preset}.paf"
-# 	input:
-# 		analyzePaf_bin=config["ANALYSEPAF"]["bin"],
-# 		hg002_reference=config["HG002v101_ref"],
-# 		subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta"
-# 	params:
-# 		asm_preset=config["MINIMAP"]["asmPreset"]
-# 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/align_assembly_to_reference_{asm_preset}.benchmark.txt"
-# 	log: "logs/{sample_id}/hs-{k}/{region_id}/align_assembly_to_reference_{asm_preset}.log"
-# 	container: "docker://mkolmogo/card_minimap2:2.23"
-# 	threads: 64
-# 	shell:
-# 		"""
-# 		minimap2 -t {threads} -I 20G -cx {params.asm_preset} -K 0M --eqx --cs {input.hg002_reference} {input.subregion_shasta_assembly} > {output.paf}
-# 		{input.analyzePaf_bin} \
-# 			--input {output.paf} \
-# 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/assembly_alignment/{wildcards.sample_id}_{wildcards.region_id}_shasta_to_hg002_minimap_{wildcards.asm_preset} \
-# 			--pixelsPerMb 5 --minAlignmentQuality 0 --minAlignmentLength 0 > {log} 2>&1
-# 		"""
-
 rule get_extended_anchor_stats:
     output:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats")
     input:
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir=config["scripts_dir"],
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
         # anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl",
         subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta",
@@ -335,6 +302,7 @@ rule get_extended_anchor_stats:
     params:
         region=config['region']['chromosome'] + ":" + config['region']['start'] + "-" + config['region']['end'],
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_extended_anchor_stats.log"
+    conda: "../envs/r.yaml"
     shell:
         """
         mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/extended_anchor_stats
@@ -354,8 +322,9 @@ rule get_reliable_snarl_stats:
         snarl_compatibility_fractions="results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
     input:
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir=config["scripts_dir"],
     log: "logs/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats.log"
+    conda: "../envs/r.yaml"
     shell:
         """
         #------- Generate reliable snarl stats --------#
@@ -377,9 +346,10 @@ rule get_debugging_files:
         read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_read_traversals.zip",
         snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_snarls.bandage.csv"
     input:
-        script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        script_dir=config["scripts_dir"],
         read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv",
         snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
+    conda: "../envs/python.yaml"
     shell:
         """
         python {input.script_dir}/process_read_processed_for_bandage.py {input.read_processed_tsv} -o {output.nodes_info_tsv}
@@ -426,7 +396,7 @@ rule run_displayPafAlignments:
 		hg002_reference_chunked="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/hg002.chunked.fasta",
 		subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta",
 		paf="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.paf",
-		R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R"
+		R_script=config["scripts_dir"] + "/analyse_displayPaf_outputs.R"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"],
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_{asm_preset}.benchmark.txt"
@@ -448,7 +418,7 @@ rule chunk_hg002_reference_for_hifiasm_using_shasta_alignment_coordinates:
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv"
     input:
         hg002_reference=config["HG002v101_ref"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
+        script=config["scripts_dir"] + "/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
         shasta_csv="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.csv",
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
@@ -465,7 +435,7 @@ rule extract_hifiasm_subregion_assembly:
     output:
         hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        script=config["scripts_dir"] + "/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -507,7 +477,7 @@ rule extract_r_utg_hifiasm_subregion_assembly:
     output:
         r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        script=config["scripts_dir"] + "/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -583,7 +553,7 @@ rule generate_alignment_plot_for_shasta_to_hifiasm_alignment:
 	output:
 		alignment_plots_pdf="results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_{asm_preset}_alignment_plots.pdf"
 	input:
-		r_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_alignment_diagonal_plot.R",
+		r_script=config["scripts_dir"] + "/generate_alignment_diagonal_plot.R",
 		shasta_to_hifiasm_alignment_paf="results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.paf"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"]
@@ -607,7 +577,7 @@ rule generate_run_summary:
     input:
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log",
         shasta_conf=config["SHASTA"]["conf"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+        script=config["scripts_dir"] + "/generate_runlog.py"
     params:
         run_mode=config['RUN_MODE'],
         region_id=config['region_id'],
