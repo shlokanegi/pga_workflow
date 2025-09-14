@@ -542,6 +542,29 @@ rule align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference:
             --pixelsPerMb 1000 --minAlignmentQuality 1 > {log} 2>&1
         """
 
+rule run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly:
+	output:
+		csv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_alignment/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}_displayPaf.csv",
+		plots_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_alignment/{asm_preset}_plots")
+	input:
+		displayPaf_bin=config["DISPLAYPAF"]["bin"],
+		hg002_reference_chunked_for_hifiasm="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.fasta",
+		r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta",
+		paf="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf",
+		R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R"
+	params:
+		asm_preset=config["MINIMAP"]["asmPreset"],
+	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly_{asm_preset}.benchmark.txt"
+	log: "logs/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly_{asm_preset}.log"
+	shell:
+		"""
+		{input.displayPaf_bin} \
+			--paf {input.paf} -r {input.hg002_reference_chunked_for_hifiasm} -a {input.r_utg_hifiasm_subregion_assembly} \
+			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm_alignment/{wildcards.sample_id}_{wildcards.region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{wildcards.asm_preset}_displayPaf \
+			--minAlignmentQuality 1 --minAlignmentLength 0 > {log} 2>&1
+		
+		Rscript {input.R_script} -c {output.csv} -o hs-{wildcards.k}_{wildcards.sample_id}_{wildcards.region_id} >> {log} 2>&1
+		"""
 
 #------ Align shasta assembly to hifiasm assembly --------#
 rule shasta_to_hifiasm_alignment:
