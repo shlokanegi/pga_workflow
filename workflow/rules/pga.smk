@@ -544,6 +544,7 @@ rule align_r_utg_hifiasm_subregion_assembly_to_chunked_hg002_reference:
 
 rule run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly:
 	output:
+		filtered_paf="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.filtered.paf",
 		csv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_alignment/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}_displayPaf.csv",
 		plots_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_alignment/{asm_preset}_plots")
 	input:
@@ -551,15 +552,20 @@ rule run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly:
 		hg002_reference_chunked_for_hifiasm="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.fasta",
 		r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta",
 		paf="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf",
-		R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R"
+		csv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv",
+		R_script="/private/groups/migalab/shnegi/vg_anchors_project/notebooks/python-scripts/old-method-scripts/analyse_displayPaf_outputs.R",
+		py_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/filter_paf_to_csv_alignments.py"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"],
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly_{asm_preset}.benchmark.txt"
 	log: "logs/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly_{asm_preset}.log"
 	shell:
 		"""
+		# FILTER paf to only include alignments in the CSV
+		python {input.py_script} --csv {input.csv} --paf {input.paf} --output {output.filtered_paf}
+		
 		{input.displayPaf_bin} \
-			--paf {input.paf} -r {input.hg002_reference_chunked_for_hifiasm} -a {input.r_utg_hifiasm_subregion_assembly} \
+			--paf {output.filtered_paf} -r {input.hg002_reference_chunked_for_hifiasm} -a {input.r_utg_hifiasm_subregion_assembly} \
 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/hifiasm_alignment/{wildcards.sample_id}_{wildcards.region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{wildcards.asm_preset}_displayPaf \
 			--minAlignmentQuality 1 --minAlignmentLength 0 > {log} 2>&1
 		
