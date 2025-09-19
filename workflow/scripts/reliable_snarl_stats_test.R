@@ -210,7 +210,7 @@ total_coverage_post <- allelic_coverage_extended.df %>%
   summarise(total_coverage = sum(coverage))
 
 # Find the overall maximum coverage to synchronize the y-axes of the coverage plots
-max_coverage <- max(max(total_coverage_pre$total_coverage), max(total_coverage_post$total_coverage), na.rm = TRUE)
+max_coverage_snarl_id <- max(max(total_coverage_pre$total_coverage), max(total_coverage_post$total_coverage), na.rm = TRUE)
 
 
 # --- 1st plot: Snarl Compatibility (Aggregated) ---
@@ -375,7 +375,7 @@ p_allelic_coverage <- allelic_coverage.df %>%
     labels = scales::comma
   ) +
   scale_y_continuous(expand = c(0, 0)) +
-  coord_cartesian(ylim = c(0, max_coverage * 1.05)) +
+  coord_cartesian(ylim = c(0, max_coverage_snarl_id * 1.05)) +
   scale_fill_brewer(palette = "Paired")
 
 #### --- 3rd plot: Snarl Allelic Coverage Extended anchors --- ####
@@ -397,7 +397,7 @@ p_allelic_coverage_extended <- allelic_coverage_extended.df %>%
     labels = scales::comma
   ) +
   scale_y_continuous(expand = c(0, 0)) +
-  coord_cartesian(ylim = c(0, max_coverage * 1.05)) +
+  coord_cartesian(ylim = c(0, max_coverage_snarl_id * 1.05)) +
   scale_fill_brewer(palette = "Paired")
 
 # --- Combine and Save All Plots using cowplot ---
@@ -438,11 +438,43 @@ final_plot <- plot_grid(main_panel, legs, ncol = 1, rel_heights = c(1, .1))
 
 ggsave(snarl_compatibility_plot_pdf, plot = final_plot, width = 12, height = 9, dpi = 400)
 
+
 # --- Create the new plot with reference positions ---
-# Create a separate aggregated data frame for the ref_pos plot that keeps ref_pos
+
+# --- Data Preparation for all refpos plots ---
+# Master list of all snarls with their unique reference positions and zygosity.
+master_snarls_with_refpos <- snarl_refpos.df %>%
+  distinct(snarl_id, .keep_all = TRUE) %>%
+  left_join(reliable_snarls.df, by = "snarl_id")
+
+# Master list of all snarls with reference positions and allelic coverage (pre-extension)
+master_snarls_with_refpos_coverage <- master_snarls_with_refpos %>%
+  left_join(allelic_coverage.df, by = "snarl_id") %>%
+  mutate(coverage = ifelse(is.na(coverage), 0, coverage)) %>%
+  filter(!is.na(ref_pos) & ref_pos > 0)
+
+# Master list of all snarls with reference positions and allelic coverage (post-extension)
+master_snarls_with_refpos_coverage_extended <- master_snarls_with_refpos %>%
+  left_join(allelic_coverage_extended.df, by = "snarl_id") %>%
+  mutate(coverage = ifelse(is.na(coverage), 0, coverage)) %>%
+  filter(!is.na(ref_pos) & ref_pos > 0)
+
+# --- Recalculate Max Coverage for Y-axis scaling ---
+total_coverage_pre_full <- master_snarls_with_refpos_coverage %>%
+  group_by(snarl_id) %>%
+  summarise(total_coverage = sum(coverage))
+
+total_coverage_post_full <- master_snarls_with_refpos_coverage_extended %>%
+  group_by(snarl_id) %>%
+  summarise(total_coverage = sum(coverage))
+
+max_coverage_refpos <- max(max(total_coverage_pre_full$total_coverage, na.rm = TRUE), max(total_coverage_post_full$total_coverage, na.rm = TRUE), na.rm = TRUE)
+
+# --- Plotting Section ---
+# The data for the top plot (compatibility) is prepared here. It correctly uses only het snarls.
 snarl_refpos_unique <- snarl_refpos.df %>%
   distinct(snarl_id, .keep_all = TRUE)
-
+  
 refpos_data <- compatibility_long.df %>%
   left_join(snarl_refpos_unique, by = c("source_snarl_id" = "snarl_id")) %>%
   rename(snarl_id = source_snarl_id)
@@ -460,7 +492,6 @@ total_counts_aggregated_refpos.df <- compatibility_counts_aggregated_refpos.df %
 variant_points_aggregated_refpos.df <- snarl_variant_types.df %>%
     right_join(total_counts_aggregated_refpos.df, by = "snarl_id")
 
-# Filter data for the plot, removing snarls with no valid reference position
 plot_data_refpos <- compatibility_counts_aggregated_refpos.df %>%
   filter(!is.na(ref_pos) & ref_pos > 0)
 
@@ -469,9 +500,10 @@ min_pos <- min(plot_data_refpos$ref_pos, na.rm = TRUE)
 max_pos <- max(plot_data_refpos$ref_pos, na.rm = TRUE)
 tick_span <- round((max_pos - min_pos) / 15)
 
+# --- 1st plot: Snarl Compatibility (refpos, het only) ---
 p_compatibility_refpos <- plot_data_refpos %>%
   ggplot(aes(x = ref_pos, y = count, fill = is_compatible)) +
-  geom_col(position = "stack", width = 1000) +
+  geom_col(position = "stack", width = 500) +
   geom_point(data = variant_points_aggregated_refpos.df %>% filter(!is.na(total_count)),
              aes(x = ref_pos, y = total_count, shape = variant_type, fill = NULL),
              color = "black", size = 2.0) +
@@ -484,25 +516,102 @@ p_compatibility_refpos <- plot_data_refpos %>%
     labels = c("true" = "Compatible", "false" = "Incompatible")
   ) +
   labs(
-    title = "Snarl Compatibility by Reference Position",
-    subtitle = paste("Total Span:", scales::comma(max_pos - min_pos), "bp  |  Span between ticks:", scales::comma(tick_span), "bp"),
     y = "Number of Linked Snarls",
-    x = "Reference Position (CHM13)",
+    x = NULL, # No x-axis title for this plot
     color = "Variant Type",
     shape = "Variant Type"
   ) +
   theme_bw(base_size = 14) +
   theme(
     panel.grid.major.x = element_blank(),
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
+    axis.text.x = element_blank(), # No x-axis labels
+    axis.ticks.x = element_blank(), # No x-axis ticks
+    plot.margin = margin(0, 5.5, 1, 5.5)
   ) +
-  scale_x_continuous(labels = scales::comma, breaks = seq(from = min_pos, to = max_pos, by = tick_span)) +
+  scale_x_continuous(labels = function(x) scales::comma(x/1000, accuracy = 0.01), breaks = seq(from = min_pos, to = max_pos, by = tick_span), expand = expansion(mult = c(0.03, 0.03))) +
   scale_y_continuous(labels = scales::comma) +
   scale_color_manual(values = c("snp" = "#bc272d", "mnp" = "#50a89f", "indel" = "#1630c1")) +
   scale_shape_manual(values = c("snp" = 16, "mnp" = 15, "indel" = 17))
 
-ggsave(snarl_compatibility_plot_refpos_pdf, plot = p_compatibility_refpos, width = 12, height = 7, dpi = 400)
+# --- 2nd plot: Snarl Allelic Coverage (refpos, all snarls) ---
+p_allelic_coverage_refpos <- master_snarls_with_refpos_coverage %>%
+  ggplot(aes(x = ref_pos, y = coverage, fill = allele_id)) +
+  geom_col(position = "stack", width = 500) +
+  labs(
+    y = "Allelic Coverage\n(pre-extension)",
+    x = NULL, # No x-axis title
+    fill = "Allele ID"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_blank(), # No x-axis labels
+    axis.ticks.x = element_blank(), # No x-axis ticks
+    plot.margin = margin(1, 5.5, 1, 5.5)
+  ) +
+  scale_x_continuous(labels = function(x) scales::comma(x/1000, accuracy = 0.01), breaks = seq(from = min_pos, to = max_pos, by = tick_span), expand = expansion(mult = c(0.03, 0.03))) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_cartesian(ylim = c(0, max_coverage_refpos * 1.05)) +
+  scale_fill_brewer(palette = "Paired")
+
+# --- 3rd plot: Snarl Allelic Coverage Extended anchors (refpos, all snarls) ---
+p_allelic_coverage_extended_refpos <- master_snarls_with_refpos_coverage_extended %>%
+  ggplot(aes(x = ref_pos, y = coverage, fill = allele_id)) +
+  geom_col(position = "stack", width = 500) +
+  labs(
+    y = "Allelic Coverage\n(post-extension)",
+    x = "Reference Position (CHM13) in Kbp",
+    fill = "Allele ID"
+  ) +
+  theme_bw(base_size = 14) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    axis.text.x = element_text(angle = 60, hjust=1),
+    plot.margin = margin(1, 5.5, 5.5, 5.5)
+  ) +
+  scale_x_continuous(labels = function(x) scales::comma(x/1000, accuracy = 0.01), breaks = seq(from = min_pos, to = max_pos, by = tick_span), expand = expansion(mult = c(0.03, 0.03))) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_cartesian(ylim = c(0, max_coverage_refpos * 1.05)) +
+  scale_fill_brewer(palette = "Paired")
+
+# --- Combine and Save All Plots using cowplot ---
+# Create a title grob for the entire figure
+title_grob_refpos <- ggdraw() + 
+    draw_label("Snarl compatibility and allelic coverage", fontface = 'bold', size = 18, x = 0.5) +
+    draw_label(paste("Region Size:", sprintf("%.1f", (max_pos - min_pos) / 1000), " Kbp  |  x-axis tick interval:", sprintf("%.1f", tick_span / 1000), " Kbp"), size = 13, x = 0.5, y=0.2)
+
+# Extract the legends from the plots
+leg_compat_refpos <- get_legend(
+  p_compatibility_refpos +
+    guides(
+      fill = guide_legend(nrow = 2, title.position = "left"),
+      color = guide_legend(nrow = 2, title.position = "left"),
+      shape = guide_legend(nrow = 2, title.position = "left")
+    ) +
+    theme(legend.box = "horizontal")
+)
+leg_allelic_refpos <- get_legend(p_allelic_coverage_refpos + guides(fill = guide_legend(nrow = 2, title.position = "left")))
+
+# Arrange the legends horizontally
+legs_refpos <- plot_grid(leg_compat_refpos, leg_allelic_refpos, ncol = 2, align = 'h', rel_widths = c(2, 1))
+
+# Arrange the four plots vertically, with their legends removed
+plots_refpos <- plot_grid(
+  p_compatibility_refpos + theme(legend.position = "none"),
+  p_allelic_coverage_refpos + theme(legend.position = "none"),
+  p_allelic_coverage_extended_refpos + theme(legend.position = "none"),
+  align = 'v',
+  ncol = 1,
+  rel_heights = c(1, 0.5, 0.8)
+)
+
+# Combine the title and the plots
+main_panel_refpos <- plot_grid(title_grob_refpos, plots_refpos, ncol = 1, rel_heights = c(0.1, 1))
+
+# Combine the main plot panel with the legends at the bottom
+final_plot_refpos <- plot_grid(main_panel_refpos, legs_refpos, ncol = 1, rel_heights = c(1, .1))
+
+ggsave(snarl_compatibility_plot_refpos_pdf, plot = final_plot_refpos, width = 12, height = 9, dpi = 400)
 
 
 #### --- 3. Reliable snarl TSV --- ####
