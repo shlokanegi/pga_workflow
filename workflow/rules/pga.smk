@@ -171,8 +171,8 @@ rule vg_chunk:
 	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
-        vg chunk -a {input.sorted_gaf} -F -g -x {input.sampled_gbz} -p {params.region} -S {input.snarls} --trace -t {threads} -b {params.prefix} > {output.subgraph_vg}
-        mv {params.prefix}{params.region_underscore}.gaf {output.chunked_gaf}
+		vg chunk -a {input.sorted_gaf} -F -g -x {input.sampled_gbz} -p {params.region} -S {input.snarls} --trace -t {threads} -b {params.prefix} > {output.subgraph_vg}
+		mv {params.prefix}{params.region_underscore}.gaf {output.chunked_gaf}
 		vg convert -p {output.subgraph_vg} > {output.subgraph_pg_vg}
 		vg convert -f {output.subgraph_pg_vg} > {output.subgraph_pg_gfa}
 		"""
@@ -215,7 +215,7 @@ rule generate_anchors_dictionary:
 	output:
 		anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl"
 	input:
-        vg-anchors_config=config["vg-anchors_config"],
+		vg_anchors_config=config["vg_anchors_config"],
 		subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.pg.dist",
 		sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.pg.vg"
 	benchmark:
@@ -223,9 +223,9 @@ rule generate_anchors_dictionary:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary.log"
 	container: "docker://quay.io/shnegi/pga_vg-anchors:1.0.1"
-    shell:
+	shell:
 		"""
-		vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
+		vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
 			--output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph > {log} 2>&1
 		"""
 
@@ -233,11 +233,11 @@ rule get_anchors_from_gaf:
 	output:
 		anchors_preext="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.jsonl",
 		anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
-        read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv",
-        pruned_anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl",
+		read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv",
+		pruned_anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.pruned.jsonl",
 		params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log"
 	input:
-        vg-anchors_config=config["vg-anchors_config"],
+		vg_anchors_config=config["vg_anchors_config"],
 		anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.pkl",
 		chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf",
 		sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.pg.vg",
@@ -247,9 +247,9 @@ rule get_anchors_from_gaf:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/get_anchors_from_gaf.log"
 	container: "docker://quay.io/shnegi/pga_vg-anchors:1.0.1"
-    shell:
+	shell:
 		"""
-		vg-anchors --config {input.vg-anchors_config} get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
+		vg-anchors --config {input.vg_anchors_config} get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
 			--output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/anchors/subgraph.anchors.json > {log} 2>&1
 		"""
 
@@ -261,8 +261,7 @@ rule chunk_fasta:
         fasta="results/reads/{sample_id}.fasta"
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/chunk_fasta.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/{region_id}/chunk_fasta.log"
-    container:
-        "docker://pegi3s/seqkit:latest"
+    container: "docker://quay.io/biocontainers/seqkit:2.8.0--h9ee0642_1"
     shell:
         """
         # Extract READ IDs from chunked GAF and then extract fasta records for these reads
@@ -521,7 +520,7 @@ rule shasta_to_hifiasm_alignment:
 		shasta_to_hifiasm_alignment_bai="results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.bam.bai",
 	input:
 		analyzePaf_bin=config["ANALYSEPAF"]["bin"],
-        hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta",
+		hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta",
 		shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta",
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"]

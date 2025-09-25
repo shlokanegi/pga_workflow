@@ -61,7 +61,7 @@ rule vg_chunk_and_index_for_ec_reads_for_positive_control:
 	log:
 		"logs/{sample_id}/hs-{k}/{region_id}/vg_chunk_and_index_for_ec_reads_for_positive_control.log"
 	threads: 128
-    container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
+	container: "docker://quay.io/shnegi/pga_vg-tabix:1.68.0"
 	shell:
 		"""
 		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/chunk
@@ -77,7 +77,7 @@ rule run_generate_anchors_dictionary_for_ec_reads_for_positive_control:
     output:
         anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.pkl"
     input:
-        vg-anchors_config=config["vg-anchors_config"],
+        vg_anchors_config=config["vg_anchors_config"],
         sampled_pg_vg_hg2_ec="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.ec.pg.vg",
         subgraph_pg_dist_hg2_ec="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/chunk/subgraph.hg2.pg.dist",
     benchmark:
@@ -86,7 +86,7 @@ rule run_generate_anchors_dictionary_for_ec_reads_for_positive_control:
     shell:
         """
         mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/anchors
-        vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg_hg2_ec} --index {input.subgraph_pg_dist_hg2_ec} \
+        vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg_hg2_ec} --index {input.subgraph_pg_dist_hg2_ec} \
             --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/anchors/subgraph
         """
 
@@ -112,7 +112,7 @@ rule run_get_anchors_from_gaf_for_ec_reads_for_positive_control:
         read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.anchors.json.reads_processed.tsv",
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/params_run.log"
     input:
-        vg-anchors_config=config["vg-anchors_config"],
+        vg_anchors_config=config["vg_anchors_config"],
         anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/anchors/subgraph.pkl",
         sampled_pg_vg_hg2_ec="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.ec.pg.vg",
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/chunk/subgraph.hg2.gaf",
@@ -121,7 +121,7 @@ rule run_get_anchors_from_gaf_for_ec_reads_for_positive_control:
         "benchmarks/{sample_id}/hs-{k}/{region_id}/run_get_anchors_from_gaf_for_ec_reads_for_positive_control.benchmark.txt"
     shell:
         """
-        vg-anchors --config {input.vg-anchors_config} get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg_hg2_ec} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
+        vg-anchors --config {input.vg_anchors_config} get-anchors --dictionary {input.anchors_dictionary} --graph {input.sampled_pg_vg_hg2_ec} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta} \
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/anchors/subgraph.anchors.json
         """
 
@@ -384,7 +384,7 @@ rule shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control:
 		shasta_to_hifiasm_alignment_bai="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.bam.bai",
 	input:
 		analyzePaf_bin=config["ANALYSEPAF"]["bin"],
-        hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta",
+		hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta",
 		shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/pc/ec/shasta/ShastaRun/Assembly.fasta",
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"]
@@ -392,7 +392,7 @@ rule shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control:
 	log: "logs/{sample_id}/hs-{k}/{region_id}/shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.log"
 	threads: 128
 	container: "docker://mkolmogo/card_minimap2:2.23"
-    shell:
+	shell:
 		"""
 		# Generate index for hifiasm assembly
 		samtools faidx {input.hifiasm_subregion_assembly}
@@ -424,7 +424,7 @@ rule generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads_for_po
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.benchmark.txt"
 	log: "logs/{sample_id}/hs-{k}/{region_id}/generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads_for_positive_control_{asm_preset}.log"
 	container: "docker://quay.io/shnegi/pga_python-r:latest"
-    shell:
+	shell:
 		"""
 		# Create output directory
 		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/ec/shasta_to_hifiasm_alignment

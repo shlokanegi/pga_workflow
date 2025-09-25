@@ -100,7 +100,7 @@ rule run_anchor_generatation_for_positive_control:
         pruned_anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.pruned.jsonl",
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log"
     input:
-        vg-anchors_config=config["vg-anchors_config"],
+        vg_anchors_config=config["vg_anchors_config"],
         sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
         subgraph_pg_dist_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.pg.dist",
         chunked_gaf_hg2="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
@@ -109,10 +109,10 @@ rule run_anchor_generatation_for_positive_control:
         "benchmarks/{sample_id}/hs-{k}/{region_id}/run_anchor_generatation_for_positive_control.benchmark.txt"
     shell:
         """
-        vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist_hg2} \
+        vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist_hg2} \
             --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph
 
-        vg-anchors --config {input.vg-anchors_config} get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf_hg2} --fasta {input.chunked_fasta_hg2}
+        vg-anchors --config {input.vg_anchors_config} get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf_hg2} --fasta {input.chunked_fasta_hg2}
             --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json
         """
 
@@ -123,7 +123,7 @@ rule chunk_fasta_for_positive_control:
     input:
         chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.hg2.gaf",
         fasta="results/reads/{sample_id}.fasta"
-    container: "docker://pegi3s/seqkit:latest"
+    container: "docker://quay.io/biocontainers/seqkit:2.8.0--h9ee0642_1"
     shell:
         """
         # Extract READ IDs from chunked GAF and then extract fasta records for these reads

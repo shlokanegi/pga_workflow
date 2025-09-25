@@ -1,17 +1,14 @@
 # URLS TO DATA
-
 SAMPLE_IDS:
   - PAW70337
   - PAW71238
 
-
 # --- Paths to data ---
+# Sample file name expected to be in the format: config["raw_reads_dir"] + "/{sample_id}/{sample_id}.fastq"
 raw_reads_dir: "/path/to/your/raw/reads/"
-
 
 # --- Path to scripts ---
 scripts_dir: "workflow/scripts"
-
 
 # --- Paths to Reference Genomes and Graphs ---
 # These paths should be updated to point to the location of the files on your system.
@@ -25,7 +22,6 @@ minparams: "k31.w50.W"
 # --- Reference genome paths ---
 chm13_ref: "/path/to/your/chm13v2.0.fa"
 HG002v101_ref: "/path/to/your/hg002v1.0.1.fasta"
-
 
 # --- Minimap2 configuration ---
 MINIMAP:
@@ -46,7 +42,7 @@ HAPLOTYPE_SAMPLING:
 
 
 # --- vg-anchors configuration ---
-vg-anchors_config: "workflow/vg-anchors/config.ini"
+vg_anchors_config: "workflow/vg-anchors/config.ini"
 
 
 # --- Tool Configuration ---
@@ -74,8 +70,8 @@ READ_TYPE: "raw"
 
 # --- Region to assemble ---
 region:
-  chromosome: "chr16"
-  start: "2160175"
-  end: "3022916"
+  chromosome: "chr6"
+  start: "31798842"
+  end: "31960826"
   flank: 1000000
-region_id: "PDPK"
+region_id: "rccx"

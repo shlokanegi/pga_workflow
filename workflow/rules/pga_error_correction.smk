@@ -97,7 +97,7 @@ rule run_generate_anchors_dictionary_for_ec_reads:
     container: "docker://quay.io/shnegi/pga_vg-anchors:1.0.1"
     shell:
         """
-		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/anchors
+        mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/anchors
         vg-anchors --config {input.vg-anchors_config} build --graph {input.sampled_pg_vg_ec} --index {input.subgraph_pg_dist_ec} \
             --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/anchors/subgraph
         """
@@ -129,7 +129,7 @@ rule chunk_fasta_for_ec_reads:
 	input:
 		chunked_gaf_ec="results_hs/hs-{k}/{sample_id}/{region_id}/ec/chunk/subgraph.gaf",
 		fasta="results_hs/hs-{k}/reads/{sample_id}.ec.fasta"
-	container: "docker://pegi3s/seqkit:latest"
+	container: "docker://quay.io/biocontainers/seqkit:2.8.0--h9ee0642_1"
 	shell:
 		"""
 		mkdir -p results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/shasta

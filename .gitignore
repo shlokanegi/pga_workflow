@@ -3,4 +3,5 @@ results/
 logs/
 .snakemake/
 workflow/.snakemake/
-workflow/results*
+results*
+benchmarks/*
