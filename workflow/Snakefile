@@ -9,32 +9,41 @@ REGION_ID = config['region_id']
 ASM_PRESET= config['MINIMAP']['asmPreset']
 tmpdir = config['TMPDIR']
 K=config['HAPLOTYPE_SAMPLING']['num_haps']
-run_mode = config.get("RUN_MODE", "all")
+
+# Workflow setup
+run_mode = config.get("RUN_MODE", "positive_control_only")
 read_type = config.get("READ_TYPE", "raw")
+run_gbz_query = config.get("RUN_GBZ_QUERY", False)
 
 wildcard_constraints:
     region_id=REGION_ID,
     sample_id=r"PAW.*",
     asm_preset=r"asm[0-9]+"
 
-include: "rules/final_targets.smk"
+# include: "rules/final_targets.smk"
+include: "rules/resources.smk"
 include: "rules/hifiasm.smk"
 
 if read_type == "ec":
 	if run_mode == "positive_control_only":
 		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only error correction targets from positive control workflow.")
+		include: "rules/final_targets/pc_ec.smk"
 		include: "rules/pc_error_correction.smk"
+	
 	elif run_mode == "no_positive_control":
 		print(f"INFO: READ_TYPE is '{read_type}'. Collecting error correction targets from PGA workflow.")
+		include: "rules/final_targets/ec.smk"
 		include: "rules/pga_error_correction.smk"
 else:
 	if run_mode == "positive_control_only":
 		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from positive control workflow.")
+		include: "rules/final_targets/pc_raw.smk"
 		include: "rules/positive_control.smk"
+	
 	elif run_mode == "no_positive_control":
 		print(f"INFO: READ_TYPE is '{read_type}'. Collecting only raw targets from PGA workflow.")
+		include: "rules/final_targets/raw.smk"
 		include: "rules/pga.smk"
-
 
 rule all:
     input:

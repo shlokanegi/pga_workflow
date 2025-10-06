@@ -18,7 +18,6 @@ graph_base: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-
 graph_base_hg2: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13/hprc-v2.0-mc-chm13"
 # graph_snarl: "/private/groups/cgl/hprc-graphs/hprc-v2.0-feb28/hprc-v2.0-mc-chm13-eval/hprc-v2.0-mc-chm13-eval.snarls" # use only when doing full v2 graph mapping
 
-
 minparams: "k31.w50.W"
 chm13_ref: "/private/groups/migalab/references/CHM13/chm13v2.0.fa"
 HG002v101_ref: "/private/groups/migalab/kkyriaki/references/unziped/hg002v1.0.1.fasta"
@@ -50,16 +49,20 @@ SHASTA:
 TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp"
 
 # Control which part of the workflow to run.
-#   "all": Runs the sample workflow AND the positive control workflow.
-#   "no_positive_control": Runs only the sample workflow.
-#   "positive_control_only": Runs only the positive control workflow.
-RUN_MODE: "no_positive_control"
-# Controls whether to use error corrected "ec" reads or "raw" reads
-READ_TYPE: "ec"
+RUN_MODE: "no_positive_control"       # "no_positive_control" | "positive_control_only"
+READ_TYPE: "raw"                       # Controls whether to use error corrected reads or raw reads
 
+RUN_GBZ_QUERY: True               # If True, run gbz query for subgraph extraction (pg.vg, dist, gaf)
+USE_FULL_GRAPH: False             # If True, use full graph for anchor generation and gbz queried reads and index. NOTE: This will overwrite the anchors/ directory.
+RUN_DEBUGGING: False         # If True, generate all debugging output files (reliable snarls files, bandage debugging files, etc.)
+
+slurm_extra: "--exclude=phoenix-[00-10,22-24]"
+exclusive_timing: true
+
+####### REGIONS TO ASSEMBLE ########
 region:
-  chromosome: "chr15"
-  start: "41306922"
-  end: "41625624"
+  chromosome: "chr22"
+  start: "21775882"
+  end: "22130996"
   flank: 5000000
-region_id: "strc"
+region_id: "HIC2"

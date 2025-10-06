@@ -8,7 +8,11 @@ rule run_hifiasm:
         ont_r10_sequence="/private/groups/migalab/kkyriaki/experiments/data/GIAB_2025/HG002/{sample_id}/{sample_id}.fastq"
     benchmark: "benchmarks/{sample_id}/hs-{k}/run_hifiasm.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/run_hifiasm.log"
-    threads: 128
+    threads: 64
+    resources:
+        mem_mb=255000,
+        runtime=54000,
+        slurm_partition=choose_partition(900)
     shell:
         """
         eval "$(micromamba shell hook --shell bash)"
@@ -22,6 +26,10 @@ rule convert_ec_fq_to_fasta:
 		fasta="results_hs/hs-{k}/reads/{sample_id}.ec.fasta"
 	input:
 		ec_fq="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.ec.fq"
+	resources:
+		mem_mb=lambda wildcards, input, attempt: get_mem_mb(input, buffer_factor=1.2, min_mb=1000),
+		runtime=100*60,
+		slurm_partition=choose_partition(100)
 	shell:
 		"""
 		# Convert FASTQ to FASTA
@@ -37,7 +45,10 @@ rule convert_gfa_to_fasta:
         hp2_gfa="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.gfa"
     benchmark: "benchmarks/{sample_id}/hs-{k}/convert_gfa_to_fasta.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/convert_gfa_to_fasta.log"
-    threads: 128
+    resources:
+        mem_mb=8500,
+        runtime=2*60,
+        slurm_partition=choose_partition(2)
     shell:
         """
         eval "$(micromamba shell hook --shell bash)"
@@ -53,6 +64,10 @@ rule combine_hifiasm_hap1_and_hap2_fastas:
     input:
         hap1_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap1.p_ctg.fasta",
         hap2_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.hap2.p_ctg.fasta"
+    resources:
+        mem_mb=lambda wildcards, input, attempt: get_mem_mb(input, buffer_factor=1.2, min_mb=1000),
+        runtime=5*60,
+        slurm_partition=choose_partition(5)
     shell:
         """
         cat {input.hap1_fasta} {input.hap2_fasta} > {output.hifiasm_assembly}
@@ -70,6 +85,10 @@ rule align_hifiasm_assembly_to_reference:
     benchmark: "benchmarks/{sample_id}/hs-{k}/align_hifiasm_assembly_to_reference_{asm_preset}.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/align_hifiasm_assembly_to_reference_{asm_preset}.log"
     threads: 64
+    resources:
+        mem_mb=54000,
+        runtime=450*60,
+        slurm_partition=choose_partition(450)
     shell:
         """
         minimap2 -t {threads} -I 20G -ax {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference} {input.hifiasm_assembly} | \
@@ -83,6 +102,10 @@ rule convert_r_utg_gfa_to_fasta:
         r_utg_fasta="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.bp.r_utg.fasta"
     benchmark: "benchmarks/{sample_id}/hs-{k}/convert_r_utg_gfa_to_fasta.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/convert_r_utg_gfa_to_fasta.log"
+    resources:
+        mem_mb=8500,
+        runtime=2*60,
+        slurm_partition=choose_partition(2)
     shell:
         """
         eval "$(micromamba shell hook --shell bash)"
@@ -104,6 +127,10 @@ rule align_r_utg_hifiasm_assembly_to_reference:
     benchmark: "benchmarks/{sample_id}/hs-{k}/align_r_utg_hifiasm_assembly_to_reference_{asm_preset}.benchmark.txt"
     log: "logs/{sample_id}/hs-{k}/align_r_utg_hifiasm_assembly_to_reference_{asm_preset}.log"
     threads: 64
+    resources:
+        mem_mb=54000,
+        runtime=450*60,
+        slurm_partition=choose_partition(450)
     shell:
         """
         minimap2 -t {threads} -I 20G -ax {params.asm_preset} -K 1M --eqx --cs {input.hg002_reference} {input.r_utg_fasta} | \
