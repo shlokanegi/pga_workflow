@@ -114,7 +114,7 @@ rule align_reads_with_vg_giraffe:
     output:
         alignment="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
+        script="workflow/scripts/process_out.awk",
         sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz",
         distance_index="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.dist",
         minimizer_index="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.longread.withzip.min",
@@ -138,7 +138,7 @@ rule parse_gaf:
     output:
         file="results_hs/alignment/hs-{k}/{sample_id}/alignments-combined.processed.gaf"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/parse_gaf.py",
+        script="workflow/scripts/parse_gaf.py",
         gaf="results_hs/alignment/hs-{k}/{sample_id}/{sample_id}.gaf.zst"
     log:
         "logs/{sample_id}/hs-{k}/parse_gaf.log"
@@ -393,7 +393,7 @@ else:
             annotated_gam="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gam",
             annotated_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.refpos.gaf"
         input:
-            script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/add_refpos_gam_to_gaf.py",
+            script="workflow/scripts/add_refpos_gam_to_gaf.py",
             sampled_gbz="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.gbz",
             chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/chunk/subgraph.gaf"
         benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/annotate_gam_gaf_with_refpos.benchmark.txt"
@@ -516,7 +516,7 @@ rule get_extended_anchor_stats:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/extended_anchor_stats")
     input:
-        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+        scripts_dir="workflow/scripts",
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
         subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/ShastaRun/Assembly.fasta",
         chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/shasta/{sample_id}.subregion.fasta"
@@ -551,7 +551,7 @@ if config.get("RUN_DEBUGGING"):
             snarl_compatibility_fractions="results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
         input:
             anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
-            scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+            scripts_dir="workflow/scripts",
         benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats.benchmark.txt"
         log: "logs/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats.log"
         resources:
@@ -579,7 +579,7 @@ if config.get("RUN_DEBUGGING"):
             read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_read_traversals.zip",
             snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/debugging/{region_id}_snarls.bandage.csv"
         input:
-            script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
+            script_dir="workflow/scripts",
             read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv",
             snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
         benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/get_debugging_files.benchmark.txt"
@@ -659,7 +659,7 @@ rule chunk_hg002_reference_for_hifiasm_using_shasta_alignment_coordinates:
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv"
     input:
         hg002_reference=config["HG002v101_ref"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
+        script="workflow/scripts/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
         shasta_csv="results_hs/hs-{k}/{sample_id}/{region_id}/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.csv",
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
@@ -681,7 +681,7 @@ rule extract_hifiasm_subregion_assembly:
     output:
         hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        script="workflow/scripts/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -732,7 +732,7 @@ rule extract_r_utg_hifiasm_subregion_assembly:
     output:
         r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta"
     input:
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
+        script="workflow/scripts/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -786,7 +786,7 @@ rule run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly:
 		r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta",
 		paf="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf",
 		csv="results_hs/hs-{k}/{sample_id}/{region_id}/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv",
-		py_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/filter_paf_to_csv_alignments.py"
+		py_script="workflow/scripts/filter_paf_to_csv_alignments.py"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"],
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly_{asm_preset}.benchmark.txt"
@@ -853,7 +853,7 @@ rule generate_alignment_plot_for_shasta_to_hifiasm_alignment:
 	output:
 		alignment_plots_pdf="results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_{asm_preset}_alignment_plots.pdf"
 	input:
-		r_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_alignment_diagonal_plot.R",
+		r_script="workflow/scripts/generate_alignment_diagonal_plot.R",
 		shasta_to_hifiasm_alignment_paf="results_hs/hs-{k}/{sample_id}/{region_id}/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.paf"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"]
@@ -881,7 +881,7 @@ rule generate_run_summary:
     input:
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log",
         shasta_conf=config["SHASTA"]["conf"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+        script="workflow/scripts/generate_runlog.py"
     params:
         run_mode=config['RUN_MODE'],
         region_id=config['region_id'],

@@ -513,13 +513,18 @@ rule generate_run_summary_positive_control:
     input:
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log",
         shasta_conf=config["SHASTA"]["conf"],
-        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
+        script="workflow/scripts/generate_runlog.py"
     params:
         run_mode=config['RUN_MODE'],
         region_id=config['region_id'],
-        asm_preset=config['MINIMAP']['asmPreset']
+        asm_preset=config['MINIMAP']['asmPreset'],
+        read_type=config.get('READ_TYPE'),
+        run_gbz_query=config.get('RUN_GBZ_QUERY'),
+        use_full_graph=config.get('USE_FULL_GRAPH'),
+        run_debugging=config.get('RUN_DEBUGGING')
     benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_run_summary_positive_control.benchmark.txt"
     shell:
         """
-        python3 {input.script} --params-log {input.params_log} --shasta-conf {input.shasta_conf} --output-log {output.pga_log} --run-mode {params.run_mode} --region-id {params.region_id} --asm-preset {params.asm_preset}
+        python3 {input.script} --params-log {input.params_log} --shasta-conf {input.shasta_conf} --output-log {output.pga_log} --run-mode {params.run_mode} --region-id {params.region_id} --asm-preset {params.asm_preset} \
+            --read-type {params.read_type} --run-gbz-query {params.run_gbz_query} --use-full-graph {params.use_full_graph} --run-debugging {params.run_debugging}
         """
