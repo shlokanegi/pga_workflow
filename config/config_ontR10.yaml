@@ -46,6 +46,9 @@ SHASTA:
   bin: "/private/groups/migalab/shnegi/vg_anchors_project/shasta"
   conf: "/private/groups/migalab/shnegi/vg_anchors_project/anchors.conf"
 
+VG_ANCHORS:
+  conf: "vg_anchors_config.ini"
+
 TMPDIR: "/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/tmp"
 
 # Control which part of the workflow to run.
@@ -54,15 +57,15 @@ READ_TYPE: "raw"                       # Controls whether to use error corrected
 
 RUN_GBZ_QUERY: True               # If True, run gbz query for subgraph extraction (pg.vg, dist, gaf)
 USE_FULL_GRAPH: False             # If True, use full graph for anchor generation and gbz queried reads and index. NOTE: This will overwrite the anchors/ directory.
-RUN_DEBUGGING: False         # If True, generate all debugging output files (reliable snarls files, bandage debugging files, etc.)
+RUN_DEBUGGING: False              # If True, generate all debugging output files (reliable snarls files, bandage debugging files, etc.)
 
 slurm_extra: "--exclude=phoenix-[00-10,22-24]"
 exclusive_timing: true
 
 ####### REGIONS TO ASSEMBLE ########
 region:
-  chromosome: "chr22"
-  start: "21775882"
-  end: "22130996"
-  flank: 5000000
-region_id: "HIC2"
+  chromosome: "chr5"
+  start: "70409744"
+  end: "71737821"
+  flank: 1000000
+region_id: "smn"

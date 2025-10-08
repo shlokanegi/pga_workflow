@@ -29,7 +29,7 @@ rule prepare_haplotype_sampling_for_ec_reads:
         kff="results_hs/hs-{k}/reads/{sample_id}.ec.kff",
         graph_gbz=config["graph_base"] + ".gbz",
         graph_hapl=config["graph_base"] + ".hapl",
-        awk_script="workflow/scripts/process_out.awk",
+        awk_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/process_out.awk",
         ec_fq="results_hs/hs-{k}/{sample_id}/hifiasm/{sample_id}.ec.fq"
     params:
         k=config["HAPLOTYPE_SAMPLING"]["num_haps"],
@@ -160,6 +160,7 @@ if config.get("RUN_GBZ_QUERY", False):
             output:
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl"
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/ec/query/subgraph.pg.dist",
                 subgraph_pg_vg="results_hs/hs-{k}/{sample_id}/{region_id}/ec/query/subgraph.pg.vg"
             benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary_with_subgraph_for_ec_reads.benchmark.txt"
@@ -170,7 +171,7 @@ if config.get("RUN_GBZ_QUERY", False):
                 slurm_partition=choose_partition(10)
             shell:
                 """
-                vg_anchor build --graph {input.subgraph_pg_vg} --index {input.subgraph_pg_dist} \
+                vg-anchors --config {input.vg_anchors_config} build --graph {input.subgraph_pg_vg} --index {input.subgraph_pg_dist} \
                     --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/anchors/subgraph > {log} 2>&1
                 """
 
@@ -178,9 +179,9 @@ if config.get("RUN_GBZ_QUERY", False):
             output:
                 anchors="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.extended.jsonl",
                 params_log="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/params_run.log",
-                profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/get_anchors.prof",
                 **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.reads_processed.tsv"})
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl",
                 chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/ec/query/subgraph.gaf",
                 subgraph_pg_vg="results_hs/hs-{k}/{sample_id}/{region_id}/ec/query/subgraph.pg.vg",
@@ -195,7 +196,7 @@ if config.get("RUN_GBZ_QUERY", False):
                 slurm_partition=choose_partition(30)
             shell:
                 """
-                python -m cProfile -o {output.profile_data} $(which vg_anchor) get-anchors \
+                vg-anchors --config {input.vg_anchors_config} get-anchors \
                     --dictionary {input.anchors_dictionary} \
                     --threads {params.processes} \
                     --graph {input.subgraph_pg_vg} \
@@ -209,6 +210,7 @@ if config.get("RUN_GBZ_QUERY", False):
             output:
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl"
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 subgraph_pg_dist="results_hs/{k}/{sample_id}/{region_id}/ec/query/subgraph.pg.dist",
                 sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.ec.pg.vg",
             benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary_with_full_graph_and_gbz_query_for_ec_reads.benchmark.txt"
@@ -220,7 +222,7 @@ if config.get("RUN_GBZ_QUERY", False):
             shell:
                 """
                 echo "Generating anchors dictionary with full graph and GBZ query..."
-                vg_anchor build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
+                vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
                     --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/anchors/subgraph > {log} 2>&1
                 """
 
@@ -228,9 +230,9 @@ if config.get("RUN_GBZ_QUERY", False):
             output:
                 anchors="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.extended.jsonl",
                 params_log="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/params_run.log",
-                profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/get_anchors.prof",
                 **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.reads_processed.tsv"})
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl",
                 chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/ec/query/subgraph.gaf",
                 sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.ec.pg.vg",
@@ -246,7 +248,7 @@ if config.get("RUN_GBZ_QUERY", False):
             shell:
                 """
                 echo "Getting anchors from GAF with full graph and GBZ query..."
-                python -m cProfile -o {output.profile_data} $(which vg_anchor) get-anchors \
+                vg-anchors --config {input.vg_anchors_config} get-anchors \
                     --dictionary {input.anchors_dictionary} \
                     --threads {params.processes} \
                     --graph {input.sampled_pg_vg} \
@@ -292,8 +294,8 @@ else:
     rule generate_anchors_dictionary_for_ec_reads:
         output:
             anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl",
-            profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/build.prof"
         input:
+            vg_anchors_config=config["VG_ANCHORS"]["conf"],
             subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/ec/chunk/subgraph.pg.dist",
             sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.ec.pg.vg"
         benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary_for_ec_reads.benchmark.txt"
@@ -304,7 +306,7 @@ else:
             slurm_partition=choose_partition(100)
         shell:
             """
-            python -m cProfile -o {output.profile_data} $(which vg_anchor) build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
+            vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg} --index {input.subgraph_pg_dist} \
                 --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/ec/anchors/subgraph > {log} 2>&1
             """
 
@@ -312,9 +314,9 @@ else:
         output:
             anchors="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.extended.jsonl",
             params_log="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/params_run.log",
-            profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/get_anchors.prof",
             **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.reads_processed.tsv"})
         input:
+            vg_anchors_config=config["VG_ANCHORS"]["conf"],
             anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl",
             chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/ec/chunk/subgraph.gaf",
             sampled_pg_vg="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.ec.pg.vg",
@@ -329,7 +331,7 @@ else:
             slurm_partition=choose_partition(100)
         shell:
             """
-            python -m cProfile -o {output.profile_data} $(which vg_anchor) get-anchors \
+            vg-anchors --config {input.vg_anchors_config} get-anchors \
                 --dictionary {input.anchors_dictionary} \
                 --threads {params.processes} \
                 --graph {input.sampled_pg_vg} \
@@ -388,7 +390,7 @@ rule get_extended_anchor_stats_for_ec_reads:
         anchor_reads_info="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/extended_anchor_reads_info.tsv",
         anchor_stats_dir=directory("results_hs/hs-{k}/{sample_id}/{region_id}/ec/extended_anchor_stats")
     input:
-        scripts_dir="workflow/scripts",
+        scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
         anchors="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.extended.jsonl",
         subregion_shasta_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/ec/shasta/ShastaRun/Assembly.fasta",
         chunked_fasta="results_hs/hs-{k}/{sample_id}/{region_id}/ec/shasta/{sample_id}.subregion.fasta"
@@ -421,7 +423,7 @@ if config.get("RUN_DEBUGGING"):
             snarl_compatibility_fractions="results_hs/hs-{k}/{sample_id}/{region_id}/ec/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
         input:
             anchors="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.extended.jsonl",
-            scripts_dir="workflow/scripts",
+            scripts_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
         benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats_for_ec_reads.benchmark.txt"
         log: "logs/{sample_id}/hs-{k}/{region_id}/get_reliable_snarl_stats_for_ec_reads.log"
         resources:
@@ -449,7 +451,7 @@ if config.get("RUN_DEBUGGING"):
             read_traversals_zip="results_hs/hs-{k}/{sample_id}/{region_id}/ec/debugging/{region_id}_read_traversals.zip",
             snarls_bandage_csv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/debugging/{region_id}_snarls.bandage.csv"
         input:
-            script_dir="workflow/scripts",
+            script_dir="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts",
             read_processed_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.anchors.json.reads_processed.tsv",
             snarl_compatibility="results_hs/hs-{k}/{sample_id}/{region_id}/ec/reliable_snarl_stats/snarl_compatibility_fractions.tsv"
         benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/get_debugging_files_for_ec_reads.benchmark.txt"
@@ -529,7 +531,7 @@ rule chunk_hg002_reference_for_hifiasm_using_shasta_alignment_coordinates_for_ec
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv"
     input:
         hg002_reference=config["HG002v101_ref"],
-        script="workflow/scripts/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/chunk_hg002_reference_for_hifiasm_using_shasta_alignments.py",
         shasta_csv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/assembly_alignment/{sample_id}_{region_id}_ZOOMED_shasta_to_hg002_minimap_{asm_preset}.csv",
     params:
         asm_preset=config["MINIMAP"]["asmPreset"]
@@ -551,7 +553,7 @@ rule extract_hifiasm_subregion_assembly_for_ec_reads:
     output:
         hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.subregion.fasta"
     input:
-        script="workflow/scripts/extract_subregion_contigs.py",
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_hifiasm_to_hg002_minimap_{asm_preset}.bam",
         hifiasm_fasta="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}.hifiasm.fasta",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv"
@@ -600,7 +602,7 @@ rule extract_r_utg_hifiasm_subregion_assembly_for_ec_reads:
     output:
         r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta"
     input:
-        script="workflow/scripts/extract_subregion_contigs.py",
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/extract_subregion_contigs.py",
         bam="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam",
         bai="results_hs/hs-{k}/{sample_id}/hifiasm_alignment/{sample_id}_r_utg_to_hg002_minimap_{asm_preset}.bam.bai",
         coords_tsv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/hg002.chunked.{asm_preset}.for_hifiasm.coords.tsv",
@@ -654,7 +656,7 @@ rule run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly:
 		r_utg_hifiasm_subregion_assembly="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/{sample_id}.{asm_preset}.hifiasm.r_utg.subregion.fasta",
 		paf="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.paf",
 		csv="results_hs/hs-{k}/{sample_id}/{region_id}/ec/hifiasm_assembly/{sample_id}_{region_id}_r_utg_hifiasm_subregion_to_hg002_minimap_{asm_preset}.csv",
-		py_script="workflow/scripts/filter_paf_to_csv_alignments.py"
+		py_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/filter_paf_to_csv_alignments.py"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"],
 	benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/run_displayPafAlignments_for_r_utg_hifiasm_subregion_assembly_{asm_preset}.benchmark.txt"
@@ -721,7 +723,7 @@ rule generate_alignment_plot_for_shasta_to_hifiasm_alignment_for_ec_reads:
 	output:
 		alignment_plots_pdf="results_hs/hs-{k}/{sample_id}/{region_id}/ec/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_{asm_preset}_alignment_plots.pdf"
 	input:
-		r_script="workflow/scripts/generate_alignment_diagonal_plot.R",
+		r_script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_alignment_diagonal_plot.R",
 		shasta_to_hifiasm_alignment_paf="results_hs/hs-{k}/{sample_id}/{region_id}/ec/shasta_to_hifiasm_alignment/{sample_id}_{region_id}_shasta_to_hifiasm_minimap_{asm_preset}.paf"
 	params:
 		asm_preset=config["MINIMAP"]["asmPreset"]
@@ -749,7 +751,7 @@ rule generate_run_summary_for_ec_reads:
     input:
         params_log="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/params_run.log",
         shasta_conf=config["SHASTA"]["conf"],
-        script="workflow/scripts/generate_runlog.py"
+        script="/private/groups/migalab/shnegi/vg_anchors_project/test_lr_giraffe_assembly/workflow/scripts/generate_runlog.py"
     params:
         run_mode=config['RUN_MODE'],
         region_id=config['region_id'],

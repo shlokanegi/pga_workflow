@@ -143,6 +143,7 @@ if config.get("RUN_GBZ_QUERY"):
             output:
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl"
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/pc/query/subgraph.pg.dist",
                 subgraph_pg_vg="results_hs/hs-{k}/{sample_id}/{region_id}/pc/query/subgraph.pg.vg"
             benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary_with_subgraph_for_positive_control.benchmark.txt"
@@ -154,7 +155,7 @@ if config.get("RUN_GBZ_QUERY"):
             shell:
                 """
                 echo "Generating anchors dictionary with subgraph from GBZ query..."
-                vg_anchor build --graph {input.subgraph_pg_vg} --index {input.subgraph_pg_dist} \
+                vg-anchors --config {input.vg_anchors_config} build --graph {input.subgraph_pg_vg} --index {input.subgraph_pg_dist} \
                     --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph > {log} 2>&1
                 """
 
@@ -162,9 +163,9 @@ if config.get("RUN_GBZ_QUERY"):
             output:
                 anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
                 params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log",
-                profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/get_anchors.prof",
                 **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.reads_processed.tsv"})
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl",
                 chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/query/subgraph.gaf",
                 subgraph_pg_vg="results_hs/hs-{k}/{sample_id}/{region_id}/pc/query/subgraph.pg.vg",
@@ -180,7 +181,7 @@ if config.get("RUN_GBZ_QUERY"):
             shell:
                 """
                 echo "Getting anchors from GAF with subgraph from GBZ query..."
-                python -m cProfile -o {output.profile_data} $(which vg_anchor) get-anchors \
+                vg-anchors --config {input.vg_anchors_config} get-anchors \
                     --dictionary {input.anchors_dictionary} \
                     --threads {params.processes} \
                     --graph {input.subgraph_pg_vg} \
@@ -194,6 +195,7 @@ if config.get("RUN_GBZ_QUERY"):
             output:
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl"
             input:
+                vg_anchors_config=config["VG_ANCHORS"]["conf"],
                 subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/pc/query/subgraph.pg.dist",
                 sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
             benchmark: "benchmarks/{sample_id}/hs-{k}/{region_id}/generate_anchors_dictionary_with_full_graph_and_gbz_query_for_positive_control.benchmark.txt"
@@ -205,7 +207,7 @@ if config.get("RUN_GBZ_QUERY"):
             shell:
                 """
                 echo "Generating anchors dictionary with full graph and GBZ query..."
-                vg_anchor build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist} \
+                vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist} \
                     --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph > {log} 2>&1
                 """
 
@@ -213,7 +215,6 @@ if config.get("RUN_GBZ_QUERY"):
             output:
                 anchors="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.extended.jsonl",
                 params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log",
-                profile_data="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/get_anchors.prof",
                 **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.reads_processed.tsv"})
             input:
                 anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.pkl",
@@ -231,7 +232,7 @@ if config.get("RUN_GBZ_QUERY"):
             shell:
                 """
                 echo "Getting anchors from GAF with full graph and GBZ query..."
-                python -m cProfile -o {output.profile_data} $(which vg_anchor) get-anchors \
+                vg-anchors --config {input.vg_anchors_config} get-anchors \
                     --dictionary {input.anchors_dictionary} \
                     --threads {params.processes} \
                     --graph {input.sampled_pg_vg_hg2} \
@@ -303,6 +304,7 @@ else:
             params_log="results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/params_run.log",
             **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/pc/anchors/subgraph.anchors.json.reads_processed.tsv"})
         input:
+            vg_anchors_config=config["VG_ANCHORS"]["conf"],
             sampled_pg_vg_hg2="results_hs/graph/{sample_id}/{sample_id}-{k}-sampled.hg2.pg.vg",
             subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.pg.dist",
             chunked_gaf="results_hs/hs-{k}/{sample_id}/{region_id}/pc/chunk/subgraph.gaf",
@@ -316,10 +318,10 @@ else:
             slurm_partition=choose_partition(120)
         shell:
             """
-            vg_anchor build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist} \
+            vg-anchors --config {input.vg_anchors_config} build --graph {input.sampled_pg_vg_hg2} --index {input.subgraph_pg_dist} \
                 --output-prefix results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph
 
-            vg_anchor get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta}
+            vg-anchors --config {input.vg_anchors_config} get-anchors --dictionary {output.anchors_dictionary} --graph {input.sampled_pg_vg_hg2} --alignment {input.chunked_gaf} --fasta {input.chunked_fasta}
                 --threads {params.processes} --output results_hs/hs-{wildcards.k}/{wildcards.sample_id}/{wildcards.region_id}/pc/anchors/subgraph.anchors.json
             """
 

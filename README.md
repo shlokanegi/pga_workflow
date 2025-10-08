@@ -34,6 +34,7 @@ The workflow is configured using the `config/config_ontR10.yaml` file. This file
 *   `MINIMAP`: Parameters for `minimap2`.
 *   `HAPLOTYPE_SAMPLING`: Parameters for haplotype sampling.
 *   `ANALYSEPAF`, `DISPLAYPAF`, `SHASTA`: Paths to binaries.
+*   `VG_ANCHORS`: Specify path to the config file (default: `config/vg_anchors_config.ini`)
 *   `TMPDIR`: A temporary directory for intermediate files.
 *   `region`: Defines the genomic region to be assembled.
 

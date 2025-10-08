@@ -4,3 +4,4 @@ logs/
 .snakemake/
 workflow/.snakemake/
 workflow/results*
+dockers/
