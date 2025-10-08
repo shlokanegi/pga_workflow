@@ -293,7 +293,7 @@ else:
 
     rule generate_anchors_dictionary_for_ec_reads:
         output:
-            anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl",
+            anchors_dictionary="results_hs/hs-{k}/{sample_id}/{region_id}/ec/anchors/subgraph.pkl"
         input:
             vg_anchors_config=config["VG_ANCHORS"]["conf"],
             subgraph_pg_dist="results_hs/hs-{k}/{sample_id}/{region_id}/ec/chunk/subgraph.pg.dist",

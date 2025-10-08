@@ -264,7 +264,7 @@ if config.get("RUN_GBZ_QUERY", False):
         rule get_anchors_from_gaf_with_subgraph:
             output:
                 anchors="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.extended.jsonl",
-                params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log"
+                params_log="results_hs/hs-{k}/{sample_id}/{region_id}/anchors/params_run.log",
                 **({} if not config.get("RUN_DEBUGGING") else {"read_processed_tsv": "results_hs/hs-{k}/{sample_id}/{region_id}/anchors/subgraph.anchors.json.reads_processed.tsv"})
             input:
                 vg_anchors_config=config["VG_ANCHORS"]["conf"],
